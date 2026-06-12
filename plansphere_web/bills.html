@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlanSphere - Bills Vault</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .view-toggle-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 8px;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: var(--transition);
+        }
+        .view-toggle-btn:hover, .view-toggle-btn.active {
+            color: var(--primary);
+            border-color: var(--primary);
+            background: rgba(99,102,241,0.1);
+        }
+        .view-toggle-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; }
+        
+        .filter-panel-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 24px;
+            align-items: center;
+        }
+        .filter-select {
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+        }
+        .filter-select:focus { border-color: var(--primary); }
+
+        /* Confirm dialog overlay */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 500;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: all; }
+        .modal-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 32px;
+            width: 100%; max-width: 380px;
+            text-align: center;
+            transform: scale(0.92);
+            transition: transform 0.25s cubic-bezier(0.16,1,0.3,1);
+        }
+        .modal-overlay.open .modal-box { transform: scale(1); }
+        .modal-box h3 { font-family: 'Outfit', sans-serif; font-size: 20px; margin-bottom: 10px; }
+        .modal-box p  { color: var(--text-secondary); font-size: 14px; margin-bottom: 28px; }
+        .modal-actions { display: flex; gap: 12px; }
+        .modal-actions .btn { flex: 1; }
+        .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+        .btn-danger:hover { transform: translateY(-1.5px); }
+
+        /* Card Fade-Out Animation for Delete */
+        .bill-card.deleting {
+            animation: shrinkOut 0.35s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+        }
+        @keyframes shrinkOut {
+            from { opacity: 1; transform: scale(1); }
+            to   { opacity: 0; transform: scale(0.92); }
+        }
+        
+        .share-tooltip {
+            position: relative;
+        }
+        .share-tooltip::after {
+            content: 'Link Copied!';
+            position: absolute;
+            bottom: 100%; left: 50%; transform: translateX(-50%) translateY(-6px);
+            background: #1e293b; color: white; padding: 4px 8px; border-radius: 4px;
+            font-size: 10px; font-weight: 500; opacity: 0; pointer-events: none;
+            transition: opacity 0.2s ease;
+            white-space: nowrap;
+        }
+        .share-tooltip.copied::after { opacity: 1; }
+    </style>
+</head>
+<body>
+    <!-- Ambient Background -->
+    <div class="ambient-bg">
+        <div class="bubble bubble-1"></div>
+        <div class="bubble bubble-2"></div>
+        <div class="bubble bubble-3"></div>
+    </div>
+
+    <!-- ── CORE APPLICATION LAYOUT ── -->
+    <div class="app-layout">
+        
+        <!-- ── SIDEBAR NAVIGATION (DESKTOP) ── -->
+        <aside class="sidebar glass-container">
+            <div class="sidebar-logo">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <span class="brand-name">PlanSphere</span>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Dashboard
+                </a>
+                <a href="add-bill.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add Bill
+                </a>
+                <a href="bills.html" class="sidebar-link active">
+                    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    Bills Vault
+                </a>
+                <a href="vault.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    Docs Vault
+                </a>
+                <a href="warranties.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Warranties
+                </a>
+                <a href="analytics.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    Analytics
+                </a>
+                <a href="search.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Smart Search
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="sidebar-profile">
+                    <div class="user-avatar" id="avatar-initials">A</div>
+                    <div class="sidebar-profile-info">
+                        <span class="name" id="user-display-name">Administrator</span>
+                        <span class="email" id="user-display-email">admin@plansphere.com</span>
+                    </div>
+                </div>
+                <a href="profile.html" class="sidebar-link" style="padding: 8px 16px;">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    Settings & Profile
+                </a>
+                <button class="logout-btn" onclick="logout()" style="width: 100%; justify-content: flex-start; padding: 8px 16px;">
+                    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- ── MAIN PAGE CONTENT AREA ── -->
+        <div class="main-content-layout">
+            
+            <!-- Page Header Panel -->
+            <div class="control-panel">
+                <div>
+                    <h1 style="font-family:'Outfit',sans-serif; font-size:24px; font-weight:800; margin-bottom:4px;">
+                        Bills Vault
+                    </h1>
+                    <p style="color:var(--text-secondary); font-size:13px;">Overview and manage your sales receipts, utility logs, and document contracts.</p>
+                </div>
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <!-- Grid/List Toggle buttons -->
+                    <button class="view-toggle-btn active" id="btn-grid" title="Grid View">
+                        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    </button>
+                    <button class="view-toggle-btn" id="btn-list" title="List View">
+                        <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                    </button>
+                    
+                    <a href="add-bill.html" class="btn btn-primary btn-nav" style="padding:10px 18px; width:auto; text-decoration:none;">
+                        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Upload Bill
+                    </a>
+                </div>
+            </div>
+
+            <!-- ── FILTERS & SEARCH ROW ── -->
+            <div class="glass-container" style="padding: 16px 20px; margin-bottom: 24px;">
+                <div class="filter-panel-row">
+                    <!-- Search input -->
+                    <div style="flex-grow:1; min-width: 240px; position:relative;">
+                        <input type="text" id="search-input" class="form-control" placeholder="Search by name, invoice, vendor..." style="padding: 10px 16px 10px 42px;">
+                        <span class="input-icon" style="left:14px; top:12px;">
+                            <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        </span>
+                    </div>
+
+                    <!-- Category filter -->
+                    <select id="filter-category" class="filter-select">
+                        <option value="all">All Categories</option>
+                        <option value="Electronics">Electronics</option>
+                        <option value="Health">Health / Medical</option>
+                        <option value="Utilities">Utilities / Bills</option>
+                        <option value="Insurance">Insurance</option>
+                        <option value="Education">Education</option>
+                        <option value="Personal ID">Personal Identity</option>
+                        <option value="Other">Other</option>
+                    </select>
+
+                    <!-- Type filter -->
+                    <select id="filter-type" class="filter-select">
+                        <option value="all">All Types</option>
+                        <option value="Warranty Bill">Warranty Bill</option>
+                        <option value="Non-Warranty Bill">Non-Warranty Bill</option>
+                        <option value="Utility Bill">Utility Bill</option>
+                        <option value="Medical Bill">Medical Bill</option>
+                        <option value="Insurance">Insurance</option>
+                        <option value="Certificate">Certificate</option>
+                        <option value="Invoice">Invoice</option>
+                    </select>
+
+                    <!-- Sort drop -->
+                    <select id="sort-by" class="filter-select">
+                        <option value="date-desc">Newest First</option>
+                        <option value="date-asc">Oldest First</option>
+                        <option value="amount-desc">Amount: High to Low</option>
+                        <option value="amount-asc">Amount: Low to High</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- ── BILLS GRID LIST CONTAINER ── -->
+            <div id="bills-grid" class="bills-grid">
+                <!-- Dynamically loaded cards -->
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ── DELETE CONFIRM MODAL ── -->
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal-box">
+            <div style="width:52px; height:52px; background:var(--danger-bg); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--danger)" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m5 0V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2"/>
+                </svg>
+            </div>
+            <h3>Delete Record?</h3>
+            <p>This action will permanently purge the item from your browser storage database.</p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancel-delete-btn">Cancel</button>
+                <button class="btn btn-danger" id="confirm-delete-btn">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core Bottom Navigation (Mobile) -->
+    <nav class="bottom-nav">
+        <a href="dashboard.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard
+        </a>
+        <a href="bills.html" class="bottom-nav-link active">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Bills
+        </a>
+        <a href="vault.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            Vault
+        </a>
+        <a href="analytics.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Analytics
+        </a>
+    </nav>
+
+    <!-- Core Javascript Scripts -->
+    <script src="app.js"></script>
+    <script>
+        let viewMode = 'grid'; // grid or list
+        let deleteTargetId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const session = checkAuth();
+            if (!session) return;
+
+            document.getElementById('user-display-name').textContent = session.name;
+            document.getElementById('user-display-email').textContent = session.email;
+            document.getElementById('avatar-initials').textContent = (session.name || 'A').charAt(0).toUpperCase();
+
+            // Render
+            renderBillsList();
+
+            // Bind filters
+            document.getElementById('search-input').addEventListener('input', renderBillsList);
+            document.getElementById('filter-category').addEventListener('change', renderBillsList);
+            document.getElementById('filter-type').addEventListener('change', renderBillsList);
+            document.getElementById('sort-by').addEventListener('change', renderBillsList);
+
+            // Bind Grid/List toggles
+            const btnGrid = document.getElementById('btn-grid');
+            const btnList = document.getElementById('btn-list');
+            const container = document.getElementById('bills-grid');
+
+            btnGrid.addEventListener('click', () => {
+                viewMode = 'grid';
+                btnGrid.classList.add('active');
+                btnList.classList.remove('active');
+                container.classList.remove('list-view');
+                renderBillsList();
+            });
+
+            btnList.addEventListener('click', () => {
+                viewMode = 'list';
+                btnList.classList.add('active');
+                btnGrid.classList.remove('active');
+                container.classList.add('list-view');
+                renderBillsList();
+            });
+
+            // Bind Delete Dialog buttons
+            document.getElementById('cancel-delete-btn').addEventListener('click', closeDeleteModal);
+            document.getElementById('confirm-delete-btn').addEventListener('click', executeDeleteAction);
+        });
+
+        function renderBillsList() {
+            const container = document.getElementById('bills-grid');
+            const bills = getBills();
+
+            const query    = document.getElementById('search-input').value.toLowerCase();
+            const category = document.getElementById('filter-category').value;
+            const type     = document.getElementById('filter-type').value;
+            const sortVal  = document.getElementById('sort-by').value;
+
+            // 1. FILTER
+            let filtered = bills.filter(b => {
+                const matchesSearch = b.productName.toLowerCase().includes(query) || 
+                                      b.billNumber.toLowerCase().includes(query) || 
+                                      b.storeName.toLowerCase().includes(query);
+                const matchesCategory = category === 'all' || b.category === category;
+                const matchesType     = type === 'all' || b.type === type;
+                return matchesSearch && matchesCategory && matchesType;
+            });
+
+            // 2. SORT
+            filtered.sort((a, b) => {
+                if (sortVal === 'date-desc') return new Date(b.purchaseDate) - new Date(a.purchaseDate);
+                if (sortVal === 'date-asc')  return new Date(a.purchaseDate) - new Date(b.purchaseDate);
+                if (sortVal === 'amount-desc') return parseFloat(b.amount || 0) - parseFloat(a.amount || 0);
+                if (sortVal === 'amount-asc')  return parseFloat(a.amount || 0) - parseFloat(b.amount || 0);
+                return 0;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        </div>
+                        <h3>No Bills Found</h3>
+                        <p>No bills match your current search or filter preferences.</p>
+                        <a href="add-bill.html" class="btn btn-primary" style="display:inline-flex; width:auto; text-decoration:none;">Add New Bill</a>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(b => buildBillCardHtml(b)).join('');
+        }
+
+        function buildBillCardHtml(bill) {
+            const ws = getWarrantyStatus(bill.expiryDate);
+            const dateStr = new Date(bill.purchaseDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+            
+            // Image template
+            let imageTag = `<div class="bill-placeholder-icon">
+                                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><polyline points="21 15 16 10 5 21"/></svg>
+                            </div>`;
+            if (bill.image && bill.fileType === 'image') {
+                imageTag = `<img src="${bill.image}" alt="${bill.productName}">`;
+            } else if (bill.fileType === 'pdf') {
+                imageTag = `<div class="bill-placeholder-icon" style="color: var(--primary);">
+                                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            </div>`;
+            }
+
+            const isWarranty = bill.type === 'Warranty Bill';
+            const statusBadge = isWarranty ? `<span class="bill-status-badge ${ws.class}">${ws.label}</span>` : '';
+            const countdownChip = isWarranty ? `
+                <div class="bill-days-left ${ws.textClass}">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    ${ws.status === 'expired' ? `Expired ${ws.daysLeft}d ago` : `${ws.daysLeft}d remaining`}
+                </div>` : '';
+
+            if (viewMode === 'list') {
+                return `
+                    <div class="glass-container bill-card" id="card-${bill.id}">
+                        <div class="bill-image-preview">
+                            ${imageTag}
+                        </div>
+                        <div class="bill-body">
+                            <h4 title="${bill.productName}">${bill.productName}</h4>
+                            <div class="bill-meta-row">
+                                <span class="bill-meta-label">Category</span>
+                                <span class="bill-meta-value">${bill.category}</span>
+                            </div>
+                            <div class="bill-meta-row">
+                                <span class="bill-meta-label">Amount</span>
+                                <span class="bill-meta-value" style="font-weight:700;">₹${parseFloat(bill.amount).toLocaleString('en-IN')}</span>
+                            </div>
+                            <div class="bill-meta-row">
+                                <span class="bill-meta-label">Purchase Date</span>
+                                <span class="bill-meta-value">${dateStr}</span>
+                            </div>
+                            ${countdownChip}
+                        </div>
+                        <div class="bill-footer">
+                            <div class="bill-footer-actions">
+                                <a href="bill-details.html?id=${bill.id}" class="card-action-btn" title="View Details">
+                                    <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </a>
+                                <button class="card-action-btn" title="Download PDF" onclick="downloadBillPDF(${JSON.stringify(bill).replace(/"/g, '&quot;')})">
+                                    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                </button>
+                                <button class="card-action-btn share-tooltip" title="Copy Share Link" onclick="copyShareLink('${bill.id}', this)">
+                                    <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                                </button>
+                                <button class="card-action-btn delete" title="Delete" onclick="triggerDeleteBill('${bill.id}')">
+                                    <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m5 0V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="glass-container bill-card" id="card-${bill.id}">
+                    <div class="bill-image-preview">
+                        ${imageTag}
+                        ${statusBadge}
+                    </div>
+                    <div class="bill-body">
+                        <h4 title="${bill.productName}">${bill.productName}</h4>
+                        <div class="bill-meta-row">
+                            <span class="bill-meta-label">Vendor</span>
+                            <span class="bill-meta-value">${bill.storeName}</span>
+                        </div>
+                        <div class="bill-meta-row">
+                            <span class="bill-meta-label">Amount</span>
+                            <span class="bill-meta-value" style="font-weight:700; color:var(--primary);">₹${parseFloat(bill.amount).toLocaleString('en-IN')}</span>
+                        </div>
+                        <div class="bill-meta-row">
+                            <span class="bill-meta-label">Purchased</span>
+                            <span class="bill-meta-value">${dateStr}</span>
+                        </div>
+                        ${countdownChip}
+                    </div>
+                    <div class="bill-footer">
+                        <span style="font-size:10px; color:var(--text-muted); font-family:monospace;">ID: ${bill.id.split('-')[1] || bill.id}</span>
+                        <div class="bill-footer-actions">
+                            <a href="bill-details.html?id=${bill.id}" class="card-action-btn" title="View Details">
+                                <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </a>
+                            <button class="card-action-btn" title="Download PDF" onclick='downloadBillPDF(${JSON.stringify(bill).replace(/'/g, "\\'")})'>
+                                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2-2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            </button>
+                            <button class="card-action-btn share-tooltip" title="Copy Share Link" onclick="copyShareLink('${bill.id}', this)">
+                                <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                            </button>
+                            <button class="card-action-btn delete" title="Delete" onclick="triggerDeleteBill('${bill.id}')">
+                                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m5 0V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Delete flow triggers
+        function triggerDeleteBill(id) {
+            deleteTargetId = id;
+            document.getElementById('delete-modal').classList.add('open');
+        }
+        function closeDeleteModal() {
+            deleteTargetId = null;
+            document.getElementById('delete-modal').classList.remove('open');
+        }
+        function executeDeleteAction() {
+            if (!deleteTargetId) return;
+            const card = document.getElementById('card-' + deleteTargetId);
+            if (card) {
+                card.classList.add('deleting');
+                setTimeout(() => {
+                    deleteBill(deleteTargetId);
+                    closeDeleteModal();
+                    renderBillsList();
+                    showToast('Bill purged from vault.', 'success');
+                }, 300);
+            }
+        }
+
+        // Copy Share Link
+        function copyShareLink(id, btn) {
+            const link = window.location.origin + `/bill-details.html?id=${id}`;
+            navigator.clipboard.writeText(link).then(() => {
+                btn.classList.add('copied');
+                setTimeout(() => btn.classList.remove('copied'), 2000);
+                showToast('Share link copied to clipboard!', 'success');
+            }).catch(() => {
+                showToast('Clipboard permissions denied.', 'error');
+            });
+        }
+    </script>
+</body>
+</html>

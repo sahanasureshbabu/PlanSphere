@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlanSphere - Profile Account</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .profile-info-grid {
+            display: grid; grid-template-columns: 1fr 1.5fr; gap: 24px;
+        }
+        @media (max-width: 768px) {
+            .profile-info-grid { grid-template-columns: 1fr; }
+        }
+        .profile-avatar-circle {
+            width: 100px; height: 100px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 50%; display:flex; align-items:center; justify-content:center; color:white; font-size:36px; font-weight:800; font-family:'Outfit',sans-serif; margin: 0 auto 20px; box-shadow: 0 4px 15px var(--primary-glow);
+        }
+    </style>
+</head>
+<body>
+    <!-- Ambient Background -->
+    <div class="ambient-bg">
+        <div class="bubble bubble-1"></div>
+        <div class="bubble bubble-2"></div>
+        <div class="bubble bubble-3"></div>
+    </div>
+
+    <!-- ── CORE APPLICATION LAYOUT ── -->
+    <div class="app-layout">
+        
+        <!-- ── SIDEBAR NAVIGATION (DESKTOP) ── -->
+        <aside class="sidebar glass-container">
+            <div class="sidebar-logo">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <span class="brand-name">PlanSphere</span>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Dashboard
+                </a>
+                <a href="add-bill.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add Bill
+                </a>
+                <a href="bills.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    Bills Vault
+                </a>
+                <a href="vault.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    Docs Vault
+                </a>
+                <a href="warranties.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Warranties
+                </a>
+                <a href="analytics.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    Analytics
+                </a>
+                <a href="search.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Smart Search
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="sidebar-profile">
+                    <div class="user-avatar" id="avatar-initials">A</div>
+                    <div class="sidebar-profile-info">
+                        <span class="name" id="user-display-name">Administrator</span>
+                        <span class="email" id="user-display-email">admin@plansphere.com</span>
+                    </div>
+                </div>
+                <a href="profile.html" class="sidebar-link active" style="padding: 8px 16px;">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    Settings & Profile
+                </a>
+                <button class="logout-btn" onclick="logout()" style="width: 100%; justify-content: flex-start; padding: 8px 16px;">
+                    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- ── MAIN PAGE CONTENT AREA ── -->
+        <div class="main-content-layout">
+            
+            <!-- Page Header -->
+            <div style="margin-bottom:32px;">
+                <h1 style="font-family:'Outfit',sans-serif; font-size:24px; font-weight:800; margin-bottom:4px;">
+                    User Account Profile
+                </h1>
+                <p style="color:var(--text-secondary); font-size:13px;">Manage your login credentials, cloud syncer logs and local browser database size.</p>
+            </div>
+
+            <!-- ── DETAILS GRID ── -->
+            <div class="profile-info-grid">
+                
+                <!-- Left: Profile Widget -->
+                <div class="glass-container profile-card">
+                    <div class="profile-avatar-circle" id="prof-avatar">A</div>
+                    <h3 id="prof-name" style="font-family:'Outfit',sans-serif; font-size:20px; font-weight:700; margin-bottom:4px;">Administrator</h3>
+                    <p id="prof-email" style="color:var(--text-secondary); font-size:13px; margin-bottom:28px;">admin@plansphere.com</p>
+
+                    <!-- Storage usage progress -->
+                    <div style="text-align:left; border-top:1px solid var(--card-border); padding-top:20px;">
+                        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:600; color:var(--text-secondary);">
+                            <span>Local Vault Occupancy</span>
+                            <span id="storage-percent">15%</span>
+                        </div>
+                        <div class="storage-progress-bar">
+                            <div class="storage-progress-fill" id="storage-fill" style="width: 15%;"></div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:6px;">
+                            <span id="storage-bytes">12 KB Stored</span>
+                            <span>5.0 MB Limit</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Account Settings forms mockup -->
+                <div class="glass-container" style="padding: 30px;">
+                    <h3 style="font-family:'Outfit',sans-serif; font-size:18px; margin-bottom:24px; border-bottom: 1px solid var(--card-border); padding-bottom:12px;">Edit Login Info</h3>
+                    
+                    <form id="profile-edit-form" novalidate>
+                        <div class="form-group">
+                            <label for="edit-name">Display Name</label>
+                            <input type="text" id="edit-name" class="form-control" placeholder="User Name" style="padding: 10px 14px;">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="edit-email">Account Email</label>
+                            <input type="email" id="edit-email" class="form-control" placeholder="user@domain.com" readonly style="padding: 10px 14px; opacity: 0.6;">
+                            <span style="font-size:10px; color:var(--text-muted); margin-top:4px; display:block;">Email address cannot be modified (linked to identity hashes).</span>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="width:auto; padding:10px 24px; font-size:13px;">Save Profile Changes</button>
+                    </form>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Core Bottom Navigation (Mobile) -->
+    <nav class="bottom-nav">
+        <a href="dashboard.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard
+        </a>
+        <a href="bills.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Bills
+        </a>
+        <a href="vault.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            Vault
+        </a>
+        <a href="analytics.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Analytics
+        </a>
+    </nav>
+
+    <!-- Core Javascript Scripts -->
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const session = checkAuth();
+            if (!session) return;
+
+            // Fill layouts
+            document.getElementById('user-display-name').textContent = session.name;
+            document.getElementById('user-display-email').textContent = session.email;
+            document.getElementById('avatar-initials').textContent = (session.name || 'A').charAt(0).toUpperCase();
+
+            // Fill page inputs
+            document.getElementById('prof-name').textContent = session.name;
+            document.getElementById('prof-email').textContent = session.email;
+            document.getElementById('prof-avatar').textContent = (session.name || 'A').charAt(0).toUpperCase();
+            document.getElementById('edit-name').value = session.name;
+            document.getElementById('edit-email').value = session.email;
+
+            // Calculate exact localStorage usage size
+            compileLocalStorageUsage();
+
+            // Bind changes
+            document.getElementById('profile-edit-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const newName = document.getElementById('edit-name').value.trim();
+
+                if (!newName) {
+                    showToast('Display Name is required.', 'error');
+                    return;
+                }
+
+                // Update session
+                session.name = newName;
+                localStorage.setItem('plansphere_session', JSON.stringify(session));
+
+                // Update in user list
+                const users = JSON.parse(localStorage.getItem('plansphere_users') || '[]');
+                const idx = users.findIndex(u => u.email.trim().toLowerCase() === session.email.trim().toLowerCase());
+                if (idx !== -1) {
+                    users[idx].name = newName;
+                    localStorage.setItem('plansphere_users', JSON.stringify(users));
+                }
+
+                showToast('Display Name updated successfully!', 'success');
+                setTimeout(() => window.location.reload(), 1000);
+            });
+        });
+
+        function compileLocalStorageUsage() {
+            let totalBytes = 0;
+            for (let x in localStorage) {
+                if (localStorage.hasOwnProperty(x)) {
+                    totalBytes += ((localStorage[x].length + x.length) * 2); // 2 bytes per char in UTF-16
+                }
+            }
+
+            const kb = (totalBytes / 1024).toFixed(1);
+            const limitBytes = 5 * 1024 * 1024; // 5MB standard browser localStorage capacity
+            const pct = ((totalBytes / limitBytes) * 100).toFixed(1);
+
+            document.getElementById('storage-bytes').textContent = `${kb} KB Stored`;
+            document.getElementById('storage-percent').textContent = `${pct}%`;
+            document.getElementById('storage-fill').style.width = `${Math.max(1, parseFloat(pct))}%`;
+        }
+    </script>
+</body>
+</html>

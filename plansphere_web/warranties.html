@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlanSphere - Warranty Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .warranty-tab-bar {
+            display: flex; gap: 12px; margin-bottom: 24px; border-bottom: 1px solid var(--card-border); padding-bottom: 12px;
+        }
+        .warranty-tab {
+            padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; border: none; background: transparent; transition: var(--transition);
+        }
+        .warranty-tab:hover, .warranty-tab.active { color: var(--text-primary); }
+        .warranty-tab.active { background: rgba(99,102,241,0.1); color: var(--primary); }
+        
+        .warranty-card-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;
+        }
+        .timer-unit {
+            display: flex; flex-direction: column; align-items: center; background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; flex: 1;
+        }
+        .timer-unit span.num { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+        .timer-unit span.lbl { font-size: 9px; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; }
+    </style>
+</head>
+<body>
+    <!-- Ambient Background -->
+    <div class="ambient-bg">
+        <div class="bubble bubble-1"></div>
+        <div class="bubble bubble-2"></div>
+        <div class="bubble bubble-3"></div>
+    </div>
+
+    <!-- ── CORE APPLICATION LAYOUT ── -->
+    <div class="app-layout">
+        
+        <!-- ── SIDEBAR NAVIGATION (DESKTOP) ── -->
+        <aside class="sidebar glass-container">
+            <div class="sidebar-logo">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <span class="brand-name">PlanSphere</span>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Dashboard
+                </a>
+                <a href="add-bill.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add Bill
+                </a>
+                <a href="bills.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    Bills Vault
+                </a>
+                <a href="vault.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    Docs Vault
+                </a>
+                <a href="warranties.html" class="sidebar-link active">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Warranties
+                </a>
+                <a href="analytics.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    Analytics
+                </a>
+                <a href="search.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Smart Search
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="sidebar-profile">
+                    <div class="user-avatar" id="avatar-initials">A</div>
+                    <div class="sidebar-profile-info">
+                        <span class="name" id="user-display-name">Administrator</span>
+                        <span class="email" id="user-display-email">admin@plansphere.com</span>
+                    </div>
+                </div>
+                <a href="profile.html" class="sidebar-link" style="padding: 8px 16px;">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    Settings & Profile
+                </a>
+                <button class="logout-btn" onclick="logout()" style="width: 100%; justify-content: flex-start; padding: 8px 16px;">
+                    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- ── MAIN PAGE CONTENT AREA ── -->
+        <div class="main-content-layout">
+            
+            <!-- Page Header -->
+            <div style="margin-bottom:32px;">
+                <h1 style="font-family:'Outfit',sans-serif; font-size:24px; font-weight:800; margin-bottom:4px;">
+                    Warranty Tracker
+                </h1>
+                <p style="color:var(--text-secondary); font-size:13px;">Monitor remaining coverage agreements, active intervals and expiration triggers.</p>
+            </div>
+
+            <!-- ── TAB BAR ── -->
+            <div class="warranty-tab-bar">
+                <button class="warranty-tab active" id="tab-all" onclick="setWarrantyFilter('all')">All Warranties (0)</button>
+                <button class="warranty-tab" id="tab-protected" onclick="setWarrantyFilter('protected')">Protected (0)</button>
+                <button class="warranty-tab" id="tab-warning" onclick="setWarrantyFilter('warning')">Expiring Soon (0)</button>
+                <button class="warranty-tab" id="tab-expired" onclick="setWarrantyFilter('expired')">Expired (0)</button>
+            </div>
+
+            <!-- ── DYNAMIC TRACKER GRID ── -->
+            <div class="warranty-card-grid" id="warranty-grid">
+                <!-- Dynamically loaded cards -->
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Core Bottom Navigation (Mobile) -->
+    <nav class="bottom-nav">
+        <a href="dashboard.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard
+        </a>
+        <a href="bills.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Bills
+        </a>
+        <a href="vault.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            Vault
+        </a>
+        <a href="analytics.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Analytics
+        </a>
+    </nav>
+
+    <!-- Core Javascript Scripts -->
+    <script src="app.js"></script>
+    <script>
+        let currentFilter = 'all';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const session = checkAuth();
+            if (!session) return;
+
+            document.getElementById('user-display-name').textContent = session.name;
+            document.getElementById('user-display-email').textContent = session.email;
+            document.getElementById('avatar-initials').textContent = (session.name || 'A').charAt(0).toUpperCase();
+
+            // Load counts and cards
+            renderWarrantyTracker();
+        });
+
+        function renderWarrantyTracker() {
+            const grid = document.getElementById('warranty-grid');
+            const bills = getBills();
+            
+            // Filter to only warranty bills
+            const warranties = bills.filter(b => b.type === 'Warranty Bill');
+
+            // Count segment stats
+            const totalCount    = warranties.length;
+            const activeCount   = warranties.filter(w => getWarrantyStatus(w.expiryDate).status === 'protected').length;
+            const warningCount  = warranties.filter(w => getWarrantyStatus(w.expiryDate).status === 'warning').length;
+            const expiredCount  = warranties.filter(w => getWarrantyStatus(w.expiryDate).status === 'expired').length;
+
+            // Set tab counters
+            document.getElementById('tab-all').textContent = `All Warranties (${totalCount})`;
+            document.getElementById('tab-protected').textContent = `Protected (${activeCount})`;
+            document.getElementById('tab-warning').textContent = `Expiring Soon (${warningCount})`;
+            document.getElementById('tab-expired').textContent = `Expired (${expiredCount})`;
+
+            // Filter to active tab selection
+            const filtered = warranties.filter(w => {
+                const ws = getWarrantyStatus(w.expiryDate);
+                if (currentFilter === 'all') return true;
+                return ws.status === currentFilter;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div class="empty-icon">
+                            <svg viewBox="0 0 24 24" width="60" height="60" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        </div>
+                        <h3>No Warranties Found</h3>
+                        <p>No warranty items match this filter category.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(w => buildWarrantyCard(w)).join('');
+        }
+
+        function setWarrantyFilter(tab) {
+            currentFilter = tab;
+            document.querySelectorAll('.warranty-tab').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            renderWarrantyTracker();
+        }
+
+        function buildWarrantyCard(bill) {
+            const ws = getWarrantyStatus(bill.expiryDate);
+            const dateStr = new Date(bill.expiryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+            
+            // Format countdown timer labels
+            let days = ws.daysLeft;
+            let years = Math.floor(days / 365);
+            days %= 365;
+            let months = Math.floor(days / 30);
+            days %= 30;
+
+            const clockIcon = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:6px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+
+            return `
+                <div class="glass-container bill-card">
+                    <div style="padding: 20px; flex-grow:1; display:flex; flex-direction:column; gap:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                            <span class="bill-status-badge ${ws.class}">${ws.label}</span>
+                            <span style="font-size:12px; font-weight:700; color:var(--text-muted);">₹${parseFloat(bill.amount).toLocaleString('en-IN')}</span>
+                        </div>
+                        <h4 style="margin-bottom:0;" title="${bill.productName}">${bill.productName}</h4>
+                        
+                        <div style="font-size:12px; color:var(--text-secondary); display:flex; justify-content:space-between;">
+                            <span>Expiry Date</span>
+                            <span style="font-weight:600; color:var(--text-primary);">${dateStr}</span>
+                        </div>
+
+                        <!-- Timer Widget -->
+                        <div style="display:flex; gap:8px; margin-top:4px;">
+                            <div class="timer-unit">
+                                <span class="num">${years}</span>
+                                <span class="lbl">Yr</span>
+                            </div>
+                            <div class="timer-unit">
+                                <span class="num">${months}</span>
+                                <span class="lbl">Mo</span>
+                            </div>
+                            <div class="timer-unit">
+                                <span class="num">${days}</span>
+                                <span class="lbl">Days</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bill-footer" style="padding:16px 20px;">
+                        <span style="font-size:11px; color:var(--text-muted);">${bill.storeName}</span>
+                        <a href="bill-details.html?id=${bill.id}" class="btn btn-secondary btn-nav" style="padding: 6px 12px; font-size:11px; width:auto; border-radius:8px;">
+                            View Contract
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

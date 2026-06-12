@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlanSphere - Docs Vault</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .folder-card.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px var(--primary-glow);
+            background: rgba(99,102,241,0.06);
+        }
+        .vault-table {
+            width: 100%; border-collapse: collapse; text-align: left;
+        }
+        .vault-table th, .vault-table td {
+            padding: 14px 16px; border-bottom: 1px solid var(--card-border);
+        }
+        .vault-table th {
+            font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .vault-table td { font-size: 13px; color: var(--text-primary); }
+        .vault-table tr:hover td { background: rgba(255,255,255,0.01); }
+        
+        .vault-actions-cell {
+            display: flex; gap: 8px; justify-content: flex-end;
+        }
+        .vault-action-btn {
+            background: transparent; border: none; padding: 6px; border-radius: 6px; color: var(--text-muted); cursor: pointer; transition: var(--transition);
+        }
+        .vault-action-btn:hover { background: rgba(99,102,241,0.1); color: var(--primary); }
+        .vault-action-btn.delete:hover { background: rgba(239,68,68,0.1); color: var(--danger); }
+        .vault-action-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.5; }
+        
+        .uploader-row {
+            display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; margin-bottom: 32px;
+        }
+        @media (max-width: 768px) {
+            .uploader-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Ambient Background -->
+    <div class="ambient-bg">
+        <div class="bubble bubble-1"></div>
+        <div class="bubble bubble-2"></div>
+        <div class="bubble bubble-3"></div>
+    </div>
+
+    <!-- ── CORE APPLICATION LAYOUT ── -->
+    <div class="app-layout">
+        
+        <!-- ── SIDEBAR NAVIGATION (DESKTOP) ── -->
+        <aside class="sidebar glass-container">
+            <div class="sidebar-logo">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <span class="brand-name">PlanSphere</span>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Dashboard
+                </a>
+                <a href="add-bill.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add Bill
+                </a>
+                <a href="bills.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    Bills Vault
+                </a>
+                <a href="vault.html" class="sidebar-link active">
+                    <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    Docs Vault
+                </a>
+                <a href="warranties.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Warranties
+                </a>
+                <a href="analytics.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    Analytics
+                </a>
+                <a href="search.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Smart Search
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="sidebar-profile">
+                    <div class="user-avatar" id="avatar-initials">A</div>
+                    <div class="sidebar-profile-info">
+                        <span class="name" id="user-display-name">Administrator</span>
+                        <span class="email" id="user-display-email">admin@plansphere.com</span>
+                    </div>
+                </div>
+                <a href="profile.html" class="sidebar-link" style="padding: 8px 16px;">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    Settings & Profile
+                </a>
+                <button class="logout-btn" onclick="logout()" style="width: 100%; justify-content: flex-start; padding: 8px 16px;">
+                    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- ── MAIN PAGE CONTENT AREA ── -->
+        <div class="main-content-layout">
+            
+            <!-- Page Header -->
+            <div style="margin-bottom:32px;">
+                <h1 style="font-family:'Outfit',sans-serif; font-size:24px; font-weight:800; margin-bottom:4px;">
+                    Secure Document Vault
+                </h1>
+                <p style="color:var(--text-secondary); font-size:13px;">Vault storage for key identity records, insurance credentials, and academic certificates.</p>
+            </div>
+
+            <!-- ── DYNAMIC FOLDER GRID ── -->
+            <div class="vault-folders-grid" id="folder-grid">
+                <!-- Folders rendered dynamically -->
+            </div>
+
+            <!-- ── UPLOADER & FILE LIST BLOCK ── -->
+            <div class="uploader-row">
+                
+                <!-- Left: Files list -->
+                <div class="glass-container" style="padding: 24px; display:flex; flex-direction:column; gap:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3 id="folder-title" style="font-family:'Outfit',sans-serif; font-size:16px;">Identity Documents</h3>
+                        <!-- Search sub vault -->
+                        <input type="text" id="vault-search" class="form-control" placeholder="Search files..." style="width: 160px; padding: 6px 12px 6px 36px; font-size:12px;">
+                    </div>
+                    
+                    <div style="overflow-x: auto; width: 100%;">
+                        <table class="vault-table">
+                            <thead>
+                                <tr>
+                                    <th>Document Name</th>
+                                    <th>Uploaded</th>
+                                    <th>Size</th>
+                                    <th style="text-align:right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="files-list-body">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Right: Quick Upload Slot -->
+                <div class="glass-container" style="padding: 24px; display:flex; flex-direction:column; gap:16px;">
+                    <h3 style="font-family:'Outfit',sans-serif; font-size:16px;">Upload to Vault</h3>
+                    
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label for="doc-upload-name">Document Title *</label>
+                        <input type="text" id="doc-upload-name" class="form-control" placeholder="e.g. My PAN Card Copy" style="padding: 10px 14px;">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label for="doc-upload-folder">Target Folder *</label>
+                        <select id="doc-upload-folder" class="form-control form-select" style="padding: 10px 14px;">
+                            <option value="Aadhaar">Aadhaar</option>
+                            <option value="PAN">PAN</option>
+                            <option value="Passport">Passport</option>
+                            <option value="Insurance">Insurance</option>
+                            <option value="Certificates">Certificates</option>
+                            <option value="Education">Education</option>
+                        </select>
+                    </div>
+
+                    <div class="drop-zone" id="vault-drop-zone" style="min-height: 160px; padding:20px;">
+                        <div class="drop-icon" style="margin-bottom:8px;">
+                            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+                        </div>
+                        <h5 style="font-size:12px; font-weight:700;">Drop file here to upload</h5>
+                        <p style="font-size:10px; color:var(--text-secondary); margin-top:2px;">PDF, JPG, PNG up to 1.5MB</p>
+                        <input type="file" id="vault-file-input" style="display:none;" accept="image/*,application/pdf">
+                    </div>
+
+                    <div id="vault-preview-box" style="display:none; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); border:1px solid var(--card-border); padding: 12px; border-radius:10px;">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <span id="vault-preview-filename" style="font-size:11px; font-weight:600; max-width:140px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">PAN.pdf</span>
+                        </div>
+                        <button class="remove-image-btn" id="vault-remove-btn" style="position:static; width:24px; height:24px;">
+                            <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="white" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+
+                    <button class="btn btn-primary" id="vault-save-btn" style="padding:10px 14px;">Store in Vault</button>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Core Bottom Navigation (Mobile) -->
+    <nav class="bottom-nav">
+        <a href="dashboard.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard
+        </a>
+        <a href="bills.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Bills
+        </a>
+        <a href="vault.html" class="bottom-nav-link active">
+            <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            Vault
+        </a>
+        <a href="analytics.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Analytics
+        </a>
+    </nav>
+
+    <!-- Core Javascript Scripts -->
+    <script src="app.js"></script>
+    <script>
+        const categories = ["Aadhaar", "PAN", "Passport", "Insurance", "Certificates", "Education"];
+        let activeFolder = "Aadhaar";
+        let uploadedBase64 = '';
+        let uploadedType = 'pdf';
+        let uploadedSize = '0 KB';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const session = checkAuth();
+            if (!session) return;
+
+            document.getElementById('user-display-name').textContent = session.name;
+            document.getElementById('user-display-email').textContent = session.email;
+            document.getElementById('avatar-initials').textContent = (session.name || 'A').charAt(0).toUpperCase();
+
+            // Initial render
+            renderFolderGrid();
+            renderFilesTable();
+
+            // Bind search
+            document.getElementById('vault-search').addEventListener('input', renderFilesTable);
+
+            // Bind file inputs
+            const zone = document.getElementById('vault-drop-zone');
+            const fileInput = document.getElementById('vault-file-input');
+            const preview = document.getElementById('vault-preview-box');
+
+            zone.addEventListener('click', () => fileInput.click());
+            zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+            zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+            zone.addEventListener('drop', e => {
+                e.preventDefault(); zone.classList.remove('dragover');
+                if (e.dataTransfer.files[0]) handleVaultFile(e.dataTransfer.files[0]);
+            });
+            fileInput.addEventListener('change', e => {
+                if (e.target.files[0]) handleVaultFile(e.target.files[0]);
+            });
+
+            document.getElementById('vault-remove-btn').addEventListener('click', () => {
+                uploadedBase64 = '';
+                preview.style.display = 'none';
+                zone.style.display    = 'flex';
+                fileInput.value       = '';
+            });
+
+            function handleVaultFile(file) {
+                if (file.size > 1.5 * 1024 * 1024) {
+                    showToast('Max file upload size is 1.5 MB.', 'error');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    uploadedBase64 = e.target.result;
+                    uploadedType   = file.type === 'application/pdf' ? 'pdf' : 'image';
+                    uploadedSize   = (file.size / 1024).toFixed(0) + ' KB';
+                    
+                    document.getElementById('vault-preview-filename').textContent = file.name;
+                    zone.style.display    = 'none';
+                    preview.style.display = 'flex';
+                };
+                reader.readAsDataURL(file);
+            }
+
+            // Save Document button
+            document.getElementById('vault-save-btn').addEventListener('click', () => {
+                const name = document.getElementById('doc-upload-name').value.trim();
+                const folder = document.getElementById('doc-upload-folder').value;
+
+                if (!name) {
+                    showToast('Please specify a document title.', 'error');
+                    return;
+                }
+                if (!uploadedBase64) {
+                    showToast('Please select or drop a document copy.', 'error');
+                    return;
+                }
+
+                const newDoc = {
+                    id: 'doc-' + Date.now(),
+                    name,
+                    category: folder,
+                    uploadDate: new Date().toISOString().split('T')[0],
+                    fileSize: uploadedSize,
+                    image: uploadedBase64,
+                    fileType: uploadedType
+                };
+
+                saveDocument(newDoc);
+                showToast('Document stored securely! 🛡️', 'success');
+
+                // Clear
+                document.getElementById('doc-upload-name').value = '';
+                document.getElementById('vault-remove-btn').click();
+
+                // Select and refresh
+                activeFolder = folder;
+                renderFolderGrid();
+                renderFilesTable();
+            });
+        });
+
+        function renderFolderGrid() {
+            const grid = document.getElementById('folder-grid');
+            const docs = getDocuments();
+
+            grid.innerHTML = categories.map(cat => {
+                const count = docs.filter(d => d.category === cat).length;
+                const isActive = cat === activeFolder ? 'active' : '';
+                return `
+                    <div class="glass-container folder-card ${isActive}" onclick="selectFolder('${cat}')">
+                        <div class="folder-card-header">
+                            <div class="folder-icon">
+                                <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                            </div>
+                        </div>
+                        <div>
+                            <h4>${cat} Documents</h4>
+                            <div class="folder-meta" style="margin-top:6px;">
+                                <span>${count} Item${count === 1 ? '' : 's'}</span>
+                                <span style="color:var(--primary); font-weight:600;">Open Folder →</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectFolder(cat) {
+            activeFolder = cat;
+            document.getElementById('doc-upload-folder').value = cat;
+            renderFolderGrid();
+            renderFilesTable();
+        }
+
+        function renderFilesTable() {
+            const body = document.getElementById('files-list-body');
+            const docs = getDocuments();
+            const searchVal = document.getElementById('vault-search').value.toLowerCase();
+            document.getElementById('folder-title').textContent = `${activeFolder} Documents`;
+
+            const filtered = docs.filter(d => {
+                const matchesFolder = d.category === activeFolder;
+                const matchesSearch = d.name.toLowerCase().includes(searchVal);
+                return matchesFolder && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                body.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:40px 0; color:var(--text-muted);">No documents stored in this directory.</td></tr>`;
+                return;
+            }
+
+            body.innerHTML = filtered.map(d => {
+                const date = new Date(d.uploadDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                return `
+                    <tr>
+                        <td style="font-weight:600;">${d.name}</td>
+                        <td>${date}</td>
+                        <td>${d.fileSize}</td>
+                        <td style="text-align:right;">
+                            <div class="vault-actions-cell">
+                                <button class="vault-action-btn" title="View Document" onclick="viewVaultFile('${d.id}')">
+                                    <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
+                                <a href="${d.image}" download="${d.name.replace(/\s+/g, '_')}.${d.fileType === 'pdf' ? 'pdf' : 'jpg'}" class="vault-action-btn" title="Download Raw Copy">
+                                    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                </a>
+                                <button class="vault-action-btn delete" title="Purge File" onclick="purgeVaultFile('${d.id}')">
+                                    <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m5 0V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2"/></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function viewVaultFile(id) {
+            const docs = getDocuments();
+            const match = docs.find(d => d.id === id);
+            if (match && match.image) {
+                // Open base64 content in new tab
+                const win = window.open();
+                if (match.fileType === 'pdf') {
+                    win.document.write(`<iframe src="${match.image}" style="width:100%; height:100vh; border:none;"></iframe>`);
+                } else {
+                    win.document.write(`<img src="${match.image}" style="max-width:100%; height:auto; display:block; margin:20px auto; border-radius:10px;">`);
+                }
+            } else {
+                showToast('Unable to render copy preview.', 'error');
+            }
+        }
+
+        function purgeVaultFile(id) {
+            deleteDocument(id);
+            showToast('Document removed from vault.', 'success');
+            renderFolderGrid();
+            renderFilesTable();
+        }
+    </script>
+</body>
+</html>

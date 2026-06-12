@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlanSphere - Smart Search</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .search-container-row {
+            display: flex; gap: 16px; margin-bottom: 24px;
+        }
+        .mic-btn {
+            background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; color: var(--text-secondary); cursor: pointer; display:flex; align-items:center; justify-content:center; transition: var(--transition);
+        }
+        .mic-btn:hover, .mic-btn.active { color: var(--danger); border-color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+        .mic-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; }
+        
+        .search-shortcuts {
+            display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 30px;
+        }
+        .shortcut-chip {
+            background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); border-radius: 8px; padding: 6px 12px; font-size: 11px; font-weight: 500; color: var(--text-secondary); cursor: pointer; transition: var(--transition);
+        }
+        .shortcut-chip:hover { border-color: var(--primary); color: var(--primary); }
+        
+        .search-results-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+        }
+        @media (max-width: 900px) {
+            .search-results-grid { grid-template-columns: 1fr; }
+        }
+        .results-box {
+            padding: 24px; min-height: 340px;
+        }
+        .results-header {
+            font-family: 'Outfit', sans-serif; font-size: 16px; margin-bottom: 16px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;
+        }
+        .results-list { display: flex; flex-direction: column; gap: 12px; }
+        
+        /* Voice overlay */
+        .voice-overlay {
+            position: fixed; inset: 0; background: rgba(7, 8, 14, 0.9); backdrop-filter: blur(8px); z-index: 600; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 20px;
+        }
+        .voice-overlay.open { display: flex; }
+        .pulse-circle {
+            width: 72px; height: 72px; background: rgba(239,68,68,0.2); border-radius: 50%; display:flex; align-items:center; justify-content:center; color: var(--danger); position: relative; animation: pulseGlow 1.5s infinite alternate ease-in-out;
+        }
+        @keyframes pulseGlow {
+            from { transform: scale(1); box-shadow: 0 0 0 0px rgba(239,68,68,0.3); }
+            to { transform: scale(1.1); box-shadow: 0 0 0 20px rgba(239,68,68,0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Ambient Background -->
+    <div class="ambient-bg">
+        <div class="bubble bubble-1"></div>
+        <div class="bubble bubble-2"></div>
+        <div class="bubble bubble-3"></div>
+    </div>
+
+    <!-- ── CORE APPLICATION LAYOUT ── -->
+    <div class="app-layout">
+        
+        <!-- ── SIDEBAR NAVIGATION (DESKTOP) ── -->
+        <aside class="sidebar glass-container">
+            <div class="sidebar-logo">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <span class="brand-name">PlanSphere</span>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Dashboard
+                </a>
+                <a href="add-bill.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add Bill
+                </a>
+                <a href="bills.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    Bills Vault
+                </a>
+                <a href="vault.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    Docs Vault
+                </a>
+                <a href="warranties.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Warranties
+                </a>
+                <a href="analytics.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    Analytics
+                </a>
+                <a href="search.html" class="sidebar-link active">
+                    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Smart Search
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="sidebar-profile">
+                    <div class="user-avatar" id="avatar-initials">A</div>
+                    <div class="sidebar-profile-info">
+                        <span class="name" id="user-display-name">Administrator</span>
+                        <span class="email" id="user-display-email">admin@plansphere.com</span>
+                    </div>
+                </div>
+                <a href="profile.html" class="sidebar-link" style="padding: 8px 16px;">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    Settings & Profile
+                </a>
+                <button class="logout-btn" onclick="logout()" style="width: 100%; justify-content: flex-start; padding: 8px 16px;">
+                    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- ── MAIN PAGE CONTENT AREA ── -->
+        <div class="main-content-layout">
+            
+            <!-- Page Header -->
+            <div style="margin-bottom:32px;">
+                <h1 style="font-family:'Outfit',sans-serif; font-size:24px; font-weight:800; margin-bottom:4px;">
+                    NLP Smart Search
+                </h1>
+                <p style="color:var(--text-secondary); font-size:13px;">Find bills and vault items instantly using natural language filters.</p>
+            </div>
+
+            <!-- ── SEARCH CONTAINER ── -->
+            <div class="search-container-row">
+                <div style="flex-grow: 1; position:relative;">
+                    <input type="text" id="query-input" class="form-control" placeholder="Try searching: 'above 10000' or 'medical bills 2025'..." style="padding: 14px 16px 14px 48px;">
+                    <span class="input-icon" style="left:16px; top:15px;">
+                        <svg viewBox="0 0 24 24" width="18" height="18"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </span>
+                </div>
+                <button class="mic-btn" id="voice-search-btn" title="Voice Search">
+                    <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                </button>
+            </div>
+
+            <!-- ── SHORTCUT CHIPS ── -->
+            <div class="search-shortcuts">
+                <span class="shortcut-chip" onclick="applyQuery('MacBook')">"MacBook"</span>
+                <span class="shortcut-chip" onclick="applyQuery('above 10000')">"above 10,000"</span>
+                <span class="shortcut-chip" onclick="applyQuery('medical bills 2025')">"medical bills 2025"</span>
+                <span class="shortcut-chip" onclick="applyQuery('expired')">"expired warranties"</span>
+                <span class="shortcut-chip" onclick="applyQuery('Certificates')">"Certificates"</span>
+            </div>
+
+            <!-- ── RESULTS PANEL GRID ── -->
+            <div class="search-results-grid">
+                
+                <!-- Left: Matching Bills -->
+                <div class="glass-container results-box">
+                    <div class="results-header">
+                        <span>Matching Bills & Expenses</span>
+                        <span id="bill-match-count" style="color:var(--primary); font-weight:700;">0 Match</span>
+                    </div>
+                    <div class="results-list" id="bills-results-container">
+                        <!-- Dynamic list -->
+                    </div>
+                </div>
+
+                <!-- Right: Matching Docs Vault -->
+                <div class="glass-container results-box">
+                    <div class="results-header">
+                        <span>Matching Vault Documents</span>
+                        <span id="doc-match-count" style="color:var(--accent); font-weight:700;">0 Match</span>
+                    </div>
+                    <div class="results-list" id="docs-results-container">
+                        <!-- Dynamic list -->
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Voice Recording Simulator Overlay -->
+    <div class="voice-overlay" id="voice-overlay">
+        <div class="pulse-circle">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </div>
+        <h3 style="font-family:'Outfit',sans-serif; color:white;">Listening to speech...</h3>
+        <p style="color:var(--text-secondary); font-size:13px; font-style:italic;" id="voice-overlay-status">"Say something like: MacBook..."</p>
+        <button class="btn btn-secondary" onclick="closeVoiceOverlay()" style="width:auto; margin-top:20px; font-size:12px; padding:6px 16px;">Cancel</button>
+    </div>
+
+    <!-- Core Bottom Navigation (Mobile) -->
+    <nav class="bottom-nav">
+        <a href="dashboard.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard
+        </a>
+        <a href="bills.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Bills
+        </a>
+        <a href="vault.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            Vault
+        </a>
+        <a href="analytics.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Analytics
+        </a>
+    </nav>
+
+    <!-- Core Javascript Scripts -->
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const session = checkAuth();
+            if (!session) return;
+
+            document.getElementById('user-display-name').textContent = session.name;
+            document.getElementById('user-display-email').textContent = session.email;
+            document.getElementById('avatar-initials').textContent = (session.name || 'A').charAt(0).toUpperCase();
+
+            // Run empty search initially to show everything
+            executeSmartSearch('');
+
+            // Bind inputs
+            document.getElementById('query-input').addEventListener('input', (e) => {
+                executeSmartSearch(e.target.value);
+            });
+
+            // Voice Search Mock
+            document.getElementById('voice-search-btn').addEventListener('click', openVoiceOverlay);
+        });
+
+        function executeSmartSearch(query) {
+            const result = parseSmartSearch(query);
+
+            const billsContainer = document.getElementById('bills-results-container');
+            const docsContainer  = document.getElementById('docs-results-container');
+
+            document.getElementById('bill-match-count').textContent = `${result.bills.length} Match${result.bills.length === 1 ? '' : 'es'}`;
+            document.getElementById('doc-match-count').textContent  = `${result.documents.length} Match${result.documents.length === 1 ? '' : 'es'}`;
+
+            // RENDER BILLS MATCHES
+            if (result.bills.length === 0) {
+                billsContainer.innerHTML = `<div style="text-align:center; padding: 40px 0; color:var(--text-muted); font-size:12px;">No bills matched your query.</div>`;
+            } else {
+                billsContainer.innerHTML = result.bills.map(b => `
+                    <a href="bill-details.html?id=${b.id}" style="text-decoration:none; color:inherit;">
+                        <div class="recent-item" style="cursor:pointer;">
+                            <div class="recent-item-info">
+                                <div class="recent-item-icon">
+                                    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                </div>
+                                <div class="recent-item-meta">
+                                    <h4>${b.productName}</h4>
+                                    <p>${b.category} · ${b.storeName}</p>
+                                </div>
+                            </div>
+                            <div class="recent-item-amount" style="color:var(--primary);">
+                                ₹${parseFloat(b.amount).toLocaleString('en-IN')}
+                            </div>
+                        </div>
+                    </a>
+                `).join('');
+            }
+
+            // RENDER DOCUMENTS MATCHES
+            if (result.documents.length === 0) {
+                docsContainer.innerHTML = `<div style="text-align:center; padding: 40px 0; color:var(--text-muted); font-size:12px;">No vault items matched your query.</div>`;
+            } else {
+                docsContainer.innerHTML = result.documents.map(d => `
+                    <div class="recent-item">
+                        <div class="recent-item-info">
+                            <div class="recent-item-icon" style="background: rgba(20, 184, 166, 0.1); color: var(--accent);">
+                                <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                            </div>
+                            <div class="recent-item-meta">
+                                <h4>${d.name}</h4>
+                                <p>Vault Segment · ${d.category}</p>
+                            </div>
+                        </div>
+                        <div class="recent-item-amount" style="font-size:11px; font-weight:normal; color:var(--text-muted);">
+                            ${d.fileSize}
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function applyQuery(str) {
+            document.getElementById('query-input').value = str;
+            executeSmartSearch(str);
+        }
+
+        // Voice simulator overlay triggers
+        function openVoiceOverlay() {
+            document.getElementById('voice-overlay').classList.add('open');
+            const status = document.getElementById('voice-overlay-status');
+            
+            // Cycle texts to simulate transcription
+            setTimeout(() => { status.textContent = '"Listening for amount query..."'; }, 1000);
+            setTimeout(() => { status.textContent = 'Transcribing: "bills above ₹10,000..."'; }, 2000);
+            
+            setTimeout(() => {
+                closeVoiceOverlay();
+                applyQuery('above 10000');
+                showToast('Voice Search query transcribed successfully!', 'success');
+            }, 3000);
+        }
+
+        function closeVoiceOverlay() {
+            document.getElementById('voice-overlay').classList.remove('open');
+        }
+    </script>
+</body>
+</html>

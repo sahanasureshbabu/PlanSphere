@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlanSphere - Smart Digital Vault Dashboard</title>
+    <meta name="description" content="PlanSphere Smart Vault Dashboard.">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Ambient Background -->
+    <div class="ambient-bg">
+        <div class="bubble bubble-1"></div>
+        <div class="bubble bubble-2"></div>
+        <div class="bubble bubble-3"></div>
+    </div>
+
+    <!-- ── CORE APPLICATION LAYOUT ── -->
+    <div class="app-layout">
+        
+        <!-- ── SIDEBAR NAVIGATION (DESKTOP) ── -->
+        <aside class="sidebar glass-container">
+            <div class="sidebar-logo">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <span class="brand-name">PlanSphere</span>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="sidebar-link active">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Dashboard
+                </a>
+                <a href="add-bill.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add Bill
+                </a>
+                <a href="bills.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    Bills Vault
+                </a>
+                <a href="vault.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    Docs Vault
+                </a>
+                <a href="warranties.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Warranties
+                </a>
+                <a href="analytics.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    Analytics
+                </a>
+                <a href="search.html" class="sidebar-link">
+                    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Smart Search
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="sidebar-profile">
+                    <div class="user-avatar" id="avatar-initials">A</div>
+                    <div class="sidebar-profile-info">
+                        <span class="name" id="user-display-name">Administrator</span>
+                        <span class="email" id="user-display-email">admin@plansphere.com</span>
+                    </div>
+                </div>
+                <a href="profile.html" class="sidebar-link" style="padding: 8px 16px;">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    Settings & Profile
+                </a>
+                <button class="logout-btn" onclick="logout()" style="width: 100%; justify-content: flex-start; padding: 8px 16px;">
+                    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- ── MAIN PAGE CONTENT AREA ── -->
+        <div class="main-content-layout">
+            
+            <!-- Top Action Header -->
+            <div class="top-bar-actions">
+                <a href="notifications.html" class="bell-badge" title="Notifications">
+                    <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    <span class="badge-dot" id="notif-dot" style="display:none;"></span>
+                </a>
+            </div>
+
+            <!-- Page Title -->
+            <div style="margin-bottom:32px;">
+                <h1 style="font-family:'Outfit',sans-serif; font-size:24px; font-weight:800; margin-bottom:4px;">
+                    Dashboard
+                </h1>
+                <p style="color:var(--text-secondary); font-size:13px;">Manage your warranty contracts, invoice metrics, and encrypted vault copies.</p>
+            </div>
+
+            <!-- ── SUMMARY STATS CARD GRID ── -->
+            <div class="stats-grid">
+                <div class="glass-container stat-card">
+                    <div class="stat-info">
+                        <h3>Total Bills</h3>
+                        <p id="stat-total" style="color:var(--primary);">0</p>
+                    </div>
+                    <div class="stat-icon primary">
+                        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </div>
+                </div>
+                <div class="glass-container stat-card">
+                    <div class="stat-info">
+                        <h3>Active Warranties</h3>
+                        <p id="stat-active" style="color:var(--success);">0</p>
+                    </div>
+                    <div class="stat-icon success">
+                        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                </div>
+                <div class="glass-container stat-card">
+                    <div class="stat-info">
+                        <h3>Expiring Soon</h3>
+                        <p id="stat-expiring" style="color:var(--warning);">0</p>
+                    </div>
+                    <div class="stat-icon warning">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
+                    </div>
+                </div>
+                <div class="glass-container stat-card">
+                    <div class="stat-info">
+                        <h3>Total Documents</h3>
+                        <p id="stat-docs" style="color:var(--accent);">0</p>
+                    </div>
+                    <div class="stat-icon accent">
+                        <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                </div>
+                <div class="glass-container stat-card">
+                    <div class="stat-info">
+                        <h3>Monthly Spending</h3>
+                        <p id="stat-spending" style="color:var(--secondary);">₹0</p>
+                    </div>
+                    <div class="stat-icon secondary">
+                        <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic alerts banner -->
+            <div id="expiry-banner-container"></div>
+
+            <!-- ── QUICK ACTIONS PANEL ── -->
+            <h3 style="font-family:'Outfit',sans-serif; font-size:16px; font-weight:700; margin-bottom:16px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">
+                Quick Shortcuts
+            </h3>
+            <div class="quick-actions-container">
+                <a href="add-bill.html" class="quick-action-btn glass-container">
+                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Add New Bill</span>
+                </a>
+                <a href="vault.html" class="quick-action-btn glass-container">
+                    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <span>Upload Document</span>
+                </a>
+                <div class="quick-action-btn glass-container" onclick="triggerScanInput()">
+                    <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    <span>Scan Receipt</span>
+                </div>
+                <input type="file" id="scan-input" style="display:none;" accept="image/*" onchange="mockScanAction(this)">
+                <a href="search.html" class="quick-action-btn glass-container">
+                    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <span>Search Engine</span>
+                </a>
+                <a href="analytics.html" class="quick-action-btn glass-container">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    <span>Analytics</span>
+                </a>
+            </div>
+
+            <!-- ── TWO COLUMN: ACTIVITY / HIGHLIGHTS ── -->
+            <div class="dashboard-grid">
+                
+                <!-- Left: Recent Bills Uploads -->
+                <div class="glass-container recent-card">
+                    <div class="recent-title-bar">
+                        <h3>Latest Bill Uploads</h3>
+                        <a href="bills.html" class="switch-link">View All</a>
+                    </div>
+                    <div class="recent-list" id="recent-bills-container">
+                        <!-- Dynamic list -->
+                    </div>
+                </div>
+
+                <!-- Right: Recent Docs Vault activity -->
+                <div class="glass-container recent-card">
+                    <div class="recent-title-bar">
+                        <h3>Recent Vault Documents</h3>
+                        <a href="vault.html" class="switch-link">Open Vault</a>
+                    </div>
+                    <div class="recent-list" id="recent-docs-container">
+                        <!-- Dynamic list -->
+                    </div>
+                </div>
+
+            </div>
+
+        </div><!-- /main-content-layout -->
+    </div><!-- /app-layout -->
+
+    <!-- ── BOTTOM NAVIGATION (MOBILE) ── -->
+    <nav class="bottom-nav">
+        <a href="dashboard.html" class="bottom-nav-link active">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard
+        </a>
+        <a href="bills.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Bills
+        </a>
+        <a href="vault.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            Vault
+        </a>
+        <a href="analytics.html" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Analytics
+        </a>
+    </nav>
+
+    <!-- Core Javascript Scripts -->
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const session = checkAuth();
+            if (!session) return;
+
+            // Fill profile data in layout
+            document.getElementById('user-display-name').textContent = session.name;
+            document.getElementById('user-display-email').textContent = session.email;
+            document.getElementById('avatar-initials').textContent = (session.name || 'A').charAt(0).toUpperCase();
+
+            // Load counts
+            loadDashboardSummary();
+            checkUnreadNotifications();
+        });
+
+        function loadDashboardSummary() {
+            const bills = getBills();
+            const docs  = getDocuments();
+
+            // Calculate totals
+            const totalCount = bills.length;
+            const activeCount = bills.filter(b => getWarrantyStatus(b.expiryDate).status === 'protected').length;
+            const expiringCount = bills.filter(b => getWarrantyStatus(b.expiryDate).status === 'warning').length;
+            const docCount = docs.length;
+
+            // Calculate monthly spending
+            const currentMonth = new Date().getMonth();
+            const currentYear  = new Date().getFullYear();
+            const monthlySpending = bills.reduce((acc, curr) => {
+                const pDate = new Date(curr.purchaseDate);
+                if (pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear) {
+                    return acc + parseFloat(curr.amount || 0);
+                }
+                return acc;
+            }, 0);
+
+            // Animate Stats
+            animateStatValue('stat-total', totalCount);
+            animateStatValue('stat-active', activeCount);
+            animateStatValue('stat-expiring', expiringCount);
+            animateStatValue('stat-docs', docCount);
+            animateStatValue('stat-spending', monthlySpending, true);
+
+            // Expiry notice banner
+            renderExpiryAlerts(bills);
+
+            // Populate Recents lists
+            populateRecentBills(bills);
+            populateRecentDocs(docs);
+        }
+
+        function animateStatValue(id, target, isCurrency = false) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            let start = 0;
+            const duration = 600;
+            const steps = 15;
+            const increment = target / steps;
+            const intervalTime = duration / steps;
+            
+            const timer = setInterval(() => {
+                start += increment;
+                if (start >= target) {
+                    clearInterval(timer);
+                    el.textContent = isCurrency ? '₹' + Math.round(target).toLocaleString('en-IN') : Math.round(target);
+                } else {
+                    el.textContent = isCurrency ? '₹' + Math.round(start).toLocaleString('en-IN') : Math.round(start);
+                }
+            }, intervalTime);
+        }
+
+        function renderExpiryAlerts(bills) {
+            const expiring = bills.filter(b => getWarrantyStatus(b.expiryDate).status === 'warning');
+            const banner = document.getElementById('expiry-banner-container');
+            if (expiring.length === 0) {
+                banner.innerHTML = '';
+                return;
+            }
+
+            const names = expiring.slice(0, 3).map(b => b.productName).join(', ');
+            const remaining = expiring.length > 3 ? ` and ${expiring.length - 3} others` : '';
+
+            banner.innerHTML = `
+                <div class="expiry-banner" style="background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: 12px; padding:16px; margin-bottom:28px; display:flex; align-items:center; gap:12px;">
+                    <div style="background: rgba(245,158,11,0.15); color: var(--warning); padding: 8px; border-radius: 8px; display:flex; align-items:center; justify-content:center;">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </div>
+                    <div>
+                        <h4 style="font-size: 13px; font-weight:700; color: #fbbf24; margin-bottom: 2px;">Expiring Warranties Alert</h4>
+                        <p style="font-size: 12px; color: var(--text-secondary);">"${names}${remaining}" are expiring in less than 30 days. Please verify status.</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function populateRecentBills(bills) {
+            const container = document.getElementById('recent-bills-container');
+            const sorted = [...bills].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 4);
+            
+            if (sorted.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding: 40px 0; color: var(--text-muted); font-size:12px;">No bills uploaded yet.</div>`;
+                return;
+            }
+
+            container.innerHTML = sorted.map(b => {
+                const date = new Date(b.purchaseDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+                return `
+                    <div class="recent-item">
+                        <div class="recent-item-info">
+                            <div class="recent-item-icon">
+                                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            </div>
+                            <div class="recent-item-meta">
+                                <h4 title="${b.productName}">${b.productName}</h4>
+                                <p>${b.type} · ${date}</p>
+                            </div>
+                        </div>
+                        <div class="recent-item-amount">
+                            ₹${parseFloat(b.amount).toLocaleString('en-IN')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function populateRecentDocs(docs) {
+            const container = document.getElementById('recent-docs-container');
+            const sorted = [...docs].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 4);
+
+            if (sorted.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding: 40px 0; color: var(--text-muted); font-size:12px;">No vault documents stored yet.</div>`;
+                return;
+            }
+
+            container.innerHTML = sorted.map(d => {
+                const date = new Date(d.uploadDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+                return `
+                    <div class="recent-item">
+                        <div class="recent-item-info">
+                            <div class="recent-item-icon" style="background: rgba(20, 184, 166, 0.1); color: var(--accent);">
+                                <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                            </div>
+                            <div class="recent-item-meta">
+                                <h4 title="${d.name}">${d.name}</h4>
+                                <p>${d.category} · ${d.fileSize}</p>
+                            </div>
+                        </div>
+                        <div class="recent-item-amount" style="font-size: 11px; font-weight:normal; color: var(--text-muted);">
+                            ${date}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function checkUnreadNotifications() {
+            const notifs = getNotifications();
+            const unread = notifs.some(n => !n.read);
+            document.getElementById('notif-dot').style.display = unread ? 'block' : 'none';
+        }
+
+        function triggerScanInput() {
+            document.getElementById('scan-input').click();
+        }
+
+        function mockScanAction(input) {
+            if (input.files && input.files[0]) {
+                showToast('🔍 Analyzing invoice image with OCR text scanner...', 'success');
+                setTimeout(() => {
+                    const sampleProducts = ['Sony PlayStation 5 Pro', 'Bose SoundLink Revolve', 'Logitech MX Master 3S'];
+                    const mockTitle = sampleProducts[Math.floor(Math.random() * sampleProducts.length)];
+                    const mockAmt   = Math.floor(Math.random() * 40000) + 9000;
+                    
+                    showToast('🎉 Receipt scan complete! Redirecting to bill form...', 'success');
+                    
+                    // Put in session parameter for add-bill page
+                    localStorage.setItem('plansphere_ocr_mock', JSON.stringify({
+                        title: mockTitle,
+                        amount: mockAmt,
+                        store: 'Croma Electronics',
+                        date: new Date().toISOString().split('T')[0]
+                    }));
+                    
+                    setTimeout(() => {
+                        window.location.href = 'add-bill.html?ocr=true';
+                    }, 1200);
+                }, 2000);
+            }
+        }
+    </script>
+</body>
+</html>

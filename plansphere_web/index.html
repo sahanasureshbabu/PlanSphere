@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlanSphere - Smart Digital Vault Login</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .switch-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .switch-link:hover {
+            text-decoration: underline;
+        }
+        .google-btn {
+            background: #ffffff;
+            color: #1f2937;
+            border: 1px solid #e5e7eb;
+            margin-top: 14px;
+        }
+        .google-btn:hover {
+            background: #f9fafb;
+            transform: translateY(-1.5px);
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 20px 0;
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--card-border);
+        }
+        .divider:not(:empty)::before { margin-right: .5em; }
+        .divider:not(:empty)::after { margin-left: .5em; }
+        
+        .form-panel {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+        .form-panel.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Ambient Background -->
+    <div class="ambient-bg">
+        <div class="bubble bubble-1"></div>
+        <div class="bubble bubble-2"></div>
+        <div class="bubble bubble-3"></div>
+    </div>
+
+    <div class="auth-wrapper">
+        <div class="glass-container auth-card">
+            <!-- Brand -->
+            <div class="brand-logo">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                <span class="brand-name">PlanSphere</span>
+            </div>
+
+            <!-- ── PANEL 1: LOGIN ── -->
+            <div id="login-panel" class="form-panel active">
+                <div class="auth-header">
+                    <h1>Welcome Back</h1>
+                    <p>Access your smart bills, warranties & documents</p>
+                </div>
+
+                <form id="login-form" novalidate>
+                    <div class="form-group">
+                        <label for="email">EMAIL ADDRESS</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">
+                                <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
+                            </span>
+                            <input type="email" id="email" class="form-control" placeholder="name@domain.com" required>
+                        </div>
+                        <div class="error-message" id="email-error">Please enter a valid email address.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <label for="password">PASSWORD</label>
+                            <a class="switch-link" onclick="switchPanel('forgot')" style="font-size:12px; margin-bottom:8px;">Forgot?</a>
+                        </div>
+                        <div class="input-wrapper">
+                            <span class="input-icon">
+                                <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            </span>
+                            <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+                        </div>
+                        <div class="error-message" id="password-error">Password is required.</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        Sign In
+                    </button>
+                </form>
+
+                <div class="divider">or</div>
+
+                <button class="btn google-btn" onclick="mockGoogleLogin()">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 8px;">
+                        <path d="M12 2A10 10 0 1 0 22 12A10 10 0 0 0 12 2Z" stroke="#4285F4"/>
+                        <path d="M12 8A4 4 0 1 1 8 12A4 4 0 0 1 12 8Z" fill="#34A853"/>
+                    </svg>
+                    Continue with Google
+                </button>
+
+                <p style="margin-top:28px; font-size:13px; color:var(--text-secondary);">
+                    Don't have an account? <a class="switch-link" onclick="switchPanel('register')">Create one</a>
+                </p>
+
+                <div style="margin-top: 24px; padding: 12px; background: rgba(255, 255, 255, 0.02); border-radius: 12px; border: 1px solid var(--card-border); font-size: 11px; color: var(--text-secondary); text-align: left; line-height: 1.5;">
+                    <strong style="color: var(--primary);">Quick Demo Account:</strong><br>
+                    Email: <span style="color: var(--text-primary); font-family: monospace;">admin@plansphere.com</span><br>
+                    Password: <span style="color: var(--text-primary); font-family: monospace;">admin123</span>
+                </div>
+            </div>
+
+            <!-- ── PANEL 2: REGISTER ── -->
+            <div id="register-panel" class="form-panel">
+                <div class="auth-header">
+                    <h1>Create Account</h1>
+                    <p>Get started with your free digital vault storage</p>
+                </div>
+
+                <form id="register-form" novalidate>
+                    <div class="form-group">
+                        <label for="reg-name">FULL NAME</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">
+                                <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            </span>
+                            <input type="text" id="reg-name" class="form-control" placeholder="John Doe" required>
+                        </div>
+                        <div class="error-message" id="reg-name-error">Name is required.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reg-email">EMAIL ADDRESS</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">
+                                <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
+                            </span>
+                            <input type="email" id="reg-email" class="form-control" placeholder="name@domain.com" required>
+                        </div>
+                        <div class="error-message" id="reg-email-error">Please enter a valid email.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reg-pass">PASSWORD</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">
+                                <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            </span>
+                            <input type="password" id="reg-pass" class="form-control" placeholder="At least 6 characters" required>
+                        </div>
+                        <div class="error-message" id="reg-pass-error">Must be at least 6 characters.</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        Sign Up
+                    </button>
+                </form>
+
+                <p style="margin-top:28px; font-size:13px; color:var(--text-secondary);">
+                    Already have an account? <a class="switch-link" onclick="switchPanel('login')">Sign In</a>
+                </p>
+            </div>
+
+            <!-- ── PANEL 3: FORGOT PASSWORD ── -->
+            <div id="forgot-panel" class="form-panel">
+                <div class="auth-header">
+                    <h1>Reset Password</h1>
+                    <p>Enter your email to receive recovery instructions</p>
+                </div>
+
+                <form id="forgot-form" novalidate>
+                    <div class="form-group">
+                        <label for="forgot-email">EMAIL ADDRESS</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">
+                                <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
+                            </span>
+                            <input type="email" id="forgot-email" class="form-control" placeholder="name@domain.com" required>
+                        </div>
+                        <div class="error-message" id="forgot-email-error">Please enter a valid email address.</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        Send Recovery Link
+                    </button>
+                </form>
+
+                <p style="margin-top:28px; font-size:13px; color:var(--text-secondary);">
+                    Back to <a class="switch-link" onclick="switchPanel('login')">Sign In</a>
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Core Javascript Scripts -->
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const session = localStorage.getItem('plansphere_session');
+            if (session) {
+                window.location.href = 'dashboard.html';
+            }
+
+            // LOGIN SUBMIT
+            const loginForm     = document.getElementById('login-form');
+            const emailInput    = document.getElementById('email');
+            const passInput     = document.getElementById('password');
+            const emailErr      = document.getElementById('email-error');
+            const passErr       = document.getElementById('password-error');
+
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                let valid = true;
+
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value)) {
+                    emailErr.style.display = 'block';
+                    emailInput.style.borderColor = 'var(--danger)';
+                    valid = false;
+                }
+                if (!passInput.value) {
+                    passErr.style.display = 'block';
+                    passInput.style.borderColor = 'var(--danger)';
+                    valid = false;
+                }
+
+                if (valid) {
+                    const res = loginUser(emailInput.value, passInput.value);
+                    if (res.success) {
+                        showToast('Sign In successful! Welcome.', 'success');
+                        setTimeout(() => window.location.href = 'dashboard.html', 1000);
+                    } else {
+                        showToast(res.message, 'error');
+                    }
+                }
+            });
+
+            // REGISTER SUBMIT
+            const regForm     = document.getElementById('register-form');
+            const regName     = document.getElementById('reg-name');
+            const regEmail    = document.getElementById('reg-email');
+            const regPass     = document.getElementById('reg-pass');
+            
+            regForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                let valid = true;
+
+                if (!regName.value.trim()) {
+                    document.getElementById('reg-name-error').style.display = 'block';
+                    regName.style.borderColor = 'var(--danger)';
+                    valid = false;
+                }
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regEmail.value)) {
+                    document.getElementById('reg-email-error').style.display = 'block';
+                    regEmail.style.borderColor = 'var(--danger)';
+                    valid = false;
+                }
+                if (regPass.value.length < 6) {
+                    document.getElementById('reg-pass-error').style.display = 'block';
+                    regPass.style.borderColor = 'var(--danger)';
+                    valid = false;
+                }
+
+                if (valid) {
+                    const res = registerUser(regName.value, regEmail.value, regPass.value);
+                    if (res.success) {
+                        showToast('Registration complete! You can sign in now.', 'success');
+                        setTimeout(() => switchPanel('login'), 1200);
+                    } else {
+                        showToast(res.message, 'error');
+                    }
+                }
+            });
+
+            // FORGOT SUBMIT
+            const forgotForm  = document.getElementById('forgot-form');
+            const forgotEmail = document.getElementById('forgot-email');
+
+            forgotForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(forgotEmail.value)) {
+                    document.getElementById('forgot-email-error').style.display = 'block';
+                    forgotEmail.style.borderColor = 'var(--danger)';
+                } else {
+                    showToast('Recovery email sent. Check your inbox!', 'success');
+                    setTimeout(() => switchPanel('login'), 2000);
+                }
+            });
+
+            // Live input clear hooks
+            [emailInput, passInput, regName, regEmail, regPass, forgotEmail].forEach(input => {
+                input.addEventListener('input', () => {
+                    input.style.borderColor = 'var(--card-border)';
+                    const err = input.id + '-error';
+                    const el = document.getElementById(err);
+                    if (el) el.style.display = 'none';
+                });
+            });
+        });
+
+        function switchPanel(panelId) {
+            document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(panelId + '-panel').classList.add('active');
+        }
+
+        function mockGoogleLogin() {
+            showToast('🔄 Simulating secure Google Authenticator connection...', 'success');
+            setTimeout(() => {
+                localStorage.setItem('plansphere_session', JSON.stringify({
+                    email: 'google.user@plansphere.com',
+                    name: 'Google User',
+                    token: 'google-' + Date.now()
+                }));
+                window.location.href = 'dashboard.html';
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
