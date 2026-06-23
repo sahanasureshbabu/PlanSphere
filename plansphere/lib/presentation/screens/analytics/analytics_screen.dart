@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:plansphere/core/constants/app_colors.dart';
 import 'package:plansphere/core/widgets/app_snackbar.dart';
@@ -22,7 +24,16 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bills = ref.watch(userBillsProvider).value ?? [];
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.go('/auth/login');
+      });
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    final bills = ref.watch(userBillsProvider).asData?.value ?? [];
     final yearBills = bills
         .where((b) => b.purchaseDate.year == _selectedYear)
         .toList();

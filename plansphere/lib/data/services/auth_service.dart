@@ -1,13 +1,14 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:plansphere/core/constants/app_constants.dart';
 import 'package:plansphere/data/models/user_model.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn? _googleSignIn = kIsWeb ? null : GoogleSignIn();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
@@ -50,7 +51,10 @@ class AuthService {
 
   // Google Sign In
   Future<UserCredential?> signInWithGoogle() async {
-    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+    if (kIsWeb || _googleSignIn == null) {
+      throw UnsupportedError('Google Sign-In is not configured/supported on Web.');
+    }
+    final GoogleSignInAccount? googleUser = await _googleSignIn!.signIn();
     if (googleUser == null) return null;
 
     final GoogleSignInAuthentication googleAuth =
@@ -88,7 +92,9 @@ class AuthService {
 
   // Sign Out
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    if (!kIsWeb && _googleSignIn != null) {
+      await _googleSignIn!.signOut();
+    }
     await _auth.signOut();
   }
 

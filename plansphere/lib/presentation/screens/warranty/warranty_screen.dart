@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:plansphere/core/constants/app_colors.dart';
 import 'package:plansphere/presentation/providers/bill_provider.dart';
@@ -33,7 +34,16 @@ class _WarrantyScreenState extends ConsumerState<WarrantyScreen>
 
   @override
   Widget build(BuildContext context) {
-    final allBills = ref.watch(userBillsProvider).value ?? [];
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.go('/auth/login');
+      });
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    final allBills = ref.watch(userBillsProvider).asData?.value ?? [];
     final warrantyBills = allBills.where((b) => b.hasWarranty).toList();
 
     final active = warrantyBills
@@ -105,6 +115,27 @@ class _WarrantyList extends StatelessWidget {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ],
+        ),
+      );
+    }
+
+    final isWide = MediaQuery.of(context).size.width >= 650;
+    if (isWide) {
+      return Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 500,
+              mainAxisExtent: 115,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 0,
+            ),
+            itemCount: bills.length,
+            itemBuilder: (ctx, i) =>
+                _WarrantyCard(bill: bills[i]).animate().fadeIn(delay: (i * 60).ms),
+          ),
         ),
       );
     }

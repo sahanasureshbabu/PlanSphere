@@ -1,6 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,6 +15,21 @@ import 'firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.darkTheme,
+      home: Scaffold(
+        body: Center(
+          child: Text(
+            details.exceptionAsString(),
+            style: const TextStyle(color: Colors.red),
+          ),
+        ),
+      ),
+    );
+  };
+
   bool firebaseInitialized = false;
   String? initError;
 
@@ -22,12 +39,38 @@ void main() async {
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
+
     firebaseInitialized = true;
+
     debugPrint("Firebase ready. Apps count: ${Firebase.apps.length}");
+    debugPrint("UID: ${FirebaseAuth.instance.currentUser?.uid}");
+    debugPrint("EMAIL: ${FirebaseAuth.instance.currentUser?.email}");
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirebaseFirestore.instance
+            .collection(AppConstants.usersCollection)
+            .doc(user.uid)
+            .collection('test')
+            .doc('test')
+            .set({
+          'message': 'Firestore working',
+          'time': DateTime.now().toString(),
+        });
+        debugPrint('✅ FIRESTORE TEST SUCCESS');
+      } else {
+        debugPrint('ℹ️ FIRESTORE TEST SKIPPED (No authenticated user at launch)');
+      }
+    } catch (e) {
+      debugPrint('❌ FIRESTORE TEST FAILED: $e');
+    }
   } on FirebaseException catch (e, st) {
     if (e.code == 'duplicate-app') {
       firebaseInitialized = true;
       debugPrint("Firebase already initialized. Continuing...");
+      debugPrint("UID: ${FirebaseAuth.instance.currentUser?.uid}");
+      debugPrint("EMAIL: ${FirebaseAuth.instance.currentUser?.email}");
     } else {
       debugPrint("Firebase initialization failed: $e\n$st");
       initError = e.toString();
@@ -45,6 +88,7 @@ void main() async {
   } catch (_) {}
 
   SharedPreferences? prefs;
+
   try {
     prefs = await SharedPreferences.getInstance();
   } catch (e) {
@@ -55,8 +99,7 @@ void main() async {
   runApp(
     ProviderScope(
       overrides: [
-        if (prefs != null)
-          sharedPreferencesProvider.overrideWithValue(prefs),
+        if (prefs != null) sharedPreferencesProvider.overrideWithValue(prefs),
       ],
       child: PlanSphereApp(
         initError: initError,
@@ -65,6 +108,7 @@ void main() async {
     ),
   );
 }
+
 class PlanSphereApp extends ConsumerWidget {
   final bool firebaseInitialized;
   final String? initError;
@@ -81,48 +125,14 @@ class PlanSphereApp extends ConsumerWidget {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
-          body: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF0F0E1A),
-                  Color(0xFF1A1930),
-                  Color(0xFF242340),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: 80,
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      "Startup Initialization Failed",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      initError ?? "Unknown Firebase Error",
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
+          backgroundColor: const Color(0xFF0F172A),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                initError ?? "Firebase initialization failed",
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.red),
               ),
             ),
           ),

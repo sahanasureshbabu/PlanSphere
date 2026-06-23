@@ -77,8 +77,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bills = ref.watch(userBillsProvider).value ?? [];
-    final documents = ref.watch(userDocumentsProvider).value ?? [];
+    final bills = ref.watch(userBillsProvider).asData?.value ?? [];
+    final documents = ref.watch(userDocumentsProvider).asData?.value ?? [];
 
     final filteredBills = _filterBills(bills);
     final filteredDocs = _filterDocs(documents);
@@ -91,106 +91,111 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           onPressed: () => context.pop(),
         ),
       ),
-      body: Column(
-        children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchCtrl,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      hintText: 'Search bills, documents...',
-                      prefixIcon: const Icon(Icons.search_rounded),
-                      suffixIcon: _query.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear_rounded),
-                              onPressed: () {
-                                _searchCtrl.clear();
-                                setState(() => _query = '');
-                              },
-                            )
-                          : null,
+      body: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: Column(
+            children: [
+              // Search bar
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchCtrl,
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          hintText: 'Search bills, documents...',
+                          prefixIcon: const Icon(Icons.search_rounded),
+                          suffixIcon: _query.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear_rounded),
+                                  onPressed: () {
+                                    _searchCtrl.clear();
+                                    setState(() => _query = '');
+                                  },
+                                )
+                              : null,
+                        ),
+                        onChanged: (v) => setState(() => _query = v),
+                      ),
                     ),
-                    onChanged: (v) => setState(() => _query = v),
-                  ),
+                    const SizedBox(width: 10),
+                    GestureDetector(
+                      onTap: _toggleListening,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: _isListening
+                              ? AppColors.error
+                              : AppColors.primary.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _isListening
+                              ? Icons.mic_rounded
+                              : Icons.mic_none_rounded,
+                          color:
+                              _isListening ? Colors.white : AppColors.primary,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                GestureDetector(
-                  onTap: _toggleListening,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: _isListening
-                          ? AppColors.error
-                          : AppColors.primary.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      _isListening
-                          ? Icons.mic_rounded
-                          : Icons.mic_none_rounded,
-                      color:
-                          _isListening ? Colors.white : AppColors.primary,
-                      size: 22,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Listening indicator
-          if (_isListening)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
               ),
-              child: Row(
-                children: [
-                  const Icon(Icons.mic_rounded,
-                      color: AppColors.error, size: 18),
-                  const SizedBox(width: 8),
-                  const Text('Listening...',
-                      style: TextStyle(color: AppColors.error)),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: _toggleListening,
-                    child: const Text('Stop'),
+
+              // Listening indicator
+              if (_isListening)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                ],
+                  child: Row(
+                    children: [
+                      const Icon(Icons.mic_rounded,
+                          color: AppColors.error, size: 18),
+                      const SizedBox(width: 8),
+                      const Text('Listening...',
+                          style: TextStyle(color: AppColors.error)),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: _toggleListening,
+                        child: const Text('Stop'),
+                      ),
+                    ],
+                  ),
+                ).animate().fadeIn(),
+
+              const SizedBox(height: 8),
+
+              // Results
+              Expanded(
+                child: _query.isEmpty
+                    ? _SearchSuggestions(
+                        onSuggestionTap: (s) {
+                          setState(() {
+                            _query = s;
+                            _searchCtrl.text = s;
+                          });
+                        },
+                      )
+                    : _SearchResults(
+                        bills: filteredBills,
+                        documents: filteredDocs,
+                        query: _query,
+                      ),
               ),
-            ).animate().fadeIn(),
-
-          const SizedBox(height: 8),
-
-          // Results
-          Expanded(
-            child: _query.isEmpty
-                ? _SearchSuggestions(
-                    onSuggestionTap: (s) {
-                      setState(() {
-                        _query = s;
-                        _searchCtrl.text = s;
-                      });
-                    },
-                  )
-                : _SearchResults(
-                    bills: filteredBills,
-                    documents: filteredDocs,
-                    query: _query,
-                  ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

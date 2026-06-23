@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
 class OcrResult {
@@ -40,11 +41,33 @@ class OcrResult {
 }
 
 class OcrService {
-  final TextRecognizer _textRecognizer =
-      TextRecognizer(script: TextRecognitionScript.latin);
+  final TextRecognizer? _textRecognizer;
 
-  Future<OcrResult> extractTextFromImage(File imageFile) async {
-    final inputImage = InputImage.fromFile(imageFile);
+  OcrService()
+      : _textRecognizer = kIsWeb
+            ? null
+            : TextRecognizer(script: TextRecognitionScript.latin);
+
+  Future<OcrResult> extractTextFromImage(XFile imageFile) async {
+    if (kIsWeb || _textRecognizer == null) {
+      // Mock OCR result for Web
+      return OcrResult(
+        fullText: 'PlanSphere Web AI Mock OCR\nStore: Croma\nProduct: Samsung OLED TV\nAmount: 54999\nDate: 15/06/2026\nGST: 27AAAAA1111A1Z1\nWarranty: 24 months\nCategory: Electronics\nTax: 9900',
+        storeName: 'Croma',
+        productName: 'Samsung OLED TV',
+        amount: 54999.0,
+        date: DateTime.now(),
+        gstNumber: '27AAAAA1111A1Z1',
+        hasWarranty: true,
+        warrantyInfo: '24 months',
+        warrantyMonths: 24,
+        category: 'Electronics',
+        confidenceScore: 0.96,
+        billNumber: 'INV-2026-9921',
+        taxAmount: 9900.0,
+      );
+    }
+    final inputImage = InputImage.fromFilePath(imageFile.path);
     final recognizedText = await _textRecognizer.processImage(inputImage);
 
     final fullText = recognizedText.text;
@@ -347,6 +370,6 @@ class OcrService {
   }
 
   void dispose() {
-    _textRecognizer.close();
+    _textRecognizer?.close();
   }
 }

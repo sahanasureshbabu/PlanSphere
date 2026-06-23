@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -29,7 +30,7 @@ class _BillScannerScreenState extends ConsumerState<BillScannerScreen> {
   final _imagePicker = ImagePicker();
   final _formKey = GlobalKey<FormState>();
 
-  File? _selectedImage;
+  XFile? _selectedImage;
   bool _isScanning = false;
   OcrResult? _scanResult;
 
@@ -76,14 +77,14 @@ class _BillScannerScreenState extends ConsumerState<BillScannerScreen> {
     );
     if (picked != null) {
       setState(() {
-        _selectedImage = File(picked.path);
+        _selectedImage = picked;
         _scanResult = null;
       });
-      await _scanImage(File(picked.path));
+      await _scanImage(picked);
     }
   }
 
-  Future<void> _scanImage(File imageFile) async {
+  Future<void> _scanImage(XFile imageFile) async {
     setState(() => _isScanning = true);
     try {
       final result = await _ocrService.extractTextFromImage(imageFile);
@@ -196,7 +197,9 @@ class _BillScannerScreenState extends ConsumerState<BillScannerScreen> {
         }
       } else {
         if (mounted) {
-          AppSnackbar.showError(context, 'Failed to save bill. Please try again.');
+          final state = ref.read(billCrudProvider);
+          final errorMsg = state.hasError ? state.error.toString() : 'Please try again.';
+          AppSnackbar.showError(context, 'Failed to save bill: $errorMsg');
         }
       }
     } catch (e) {
@@ -355,12 +358,19 @@ class _BillScannerScreenState extends ConsumerState<BillScannerScreen> {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(20),
-                      child: Image.file(
-                        _selectedImage!,
-                        height: 200,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
+                      child: kIsWeb
+                          ? Image.network(
+                              _selectedImage!.path,
+                              height: 200,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            )
+                          : Image.file(
+                              File(_selectedImage!.path),
+                              height: 200,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
                     ),
                     if (_isScanning)
                       Container(

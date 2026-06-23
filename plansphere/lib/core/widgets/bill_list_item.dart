@@ -130,6 +130,10 @@ class BillListItem extends StatelessWidget {
                     child: Text('View Details'),
                   ),
                   const PopupMenuItem(
+                    value: 'edit',
+                    child: Text('Edit'),
+                  ),
+                  const PopupMenuItem(
                     value: 'delete',
                     child: Text('Delete',
                         style: TextStyle(color: AppColors.error)),
@@ -138,6 +142,8 @@ class BillListItem extends StatelessWidget {
                 onSelected: (value) {
                   if (value == 'view') {
                     context.push('/bills/${bill.id}');
+                  } else if (value == 'edit') {
+                    context.push('/bills/${bill.id}/edit');
                   } else if (value == 'delete') {
                     onDelete!();
                   }

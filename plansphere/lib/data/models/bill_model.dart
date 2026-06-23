@@ -16,6 +16,7 @@ class BillModel {
   final List<String> tags;
   final String? imageUrl;
   final String? pdfUrl;
+  final String? imageBase64;
   final bool hasWarranty;
   final int? warrantyDurationMonths;
   final DateTime? warrantyExpiryDate;
@@ -54,6 +55,7 @@ class BillModel {
     required this.tags,
     this.imageUrl,
     this.pdfUrl,
+    this.imageBase64,
     required this.hasWarranty,
     this.warrantyDurationMonths,
     this.warrantyExpiryDate,
@@ -122,6 +124,7 @@ class BillModel {
       tags: List<String>.from(data['tags'] ?? []),
       imageUrl: data['imageUrl'],
       pdfUrl: data['pdfUrl'],
+      imageBase64: data['imageBase64'],
       hasWarranty: data['hasWarranty'] ?? false,
       warrantyDurationMonths: data['warrantyDurationMonths'],
       warrantyExpiryDate: data['warrantyExpiryDate'] != null
@@ -163,6 +166,7 @@ class BillModel {
       'tags': tags,
       'imageUrl': imageUrl,
       'pdfUrl': pdfUrl,
+      'imageBase64': imageBase64,
       'hasWarranty': hasWarranty,
       'warrantyDurationMonths': warrantyDurationMonths,
       'warrantyExpiryDate': warrantyExpiryDate != null
@@ -204,6 +208,7 @@ class BillModel {
     List<String>? tags,
     String? imageUrl,
     String? pdfUrl,
+    String? imageBase64,
     bool? hasWarranty,
     int? warrantyDurationMonths,
     DateTime? warrantyExpiryDate,
@@ -241,6 +246,7 @@ class BillModel {
       tags: tags ?? this.tags,
       imageUrl: imageUrl ?? this.imageUrl,
       pdfUrl: pdfUrl ?? this.pdfUrl,
+      imageBase64: imageBase64 ?? this.imageBase64,
       hasWarranty: hasWarranty ?? this.hasWarranty,
       warrantyDurationMonths: warrantyDurationMonths ?? this.warrantyDurationMonths,
       warrantyExpiryDate: warrantyExpiryDate ?? this.warrantyExpiryDate,

@@ -79,18 +79,25 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Skip button
-              Align(
-                alignment: Alignment.topRight,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: TextButton(
-                    onPressed: _completeOnboarding,
-                    child: const Text(
-                      'Skip',
-                      style: TextStyle(color: Colors.white60),
+              // Header with logo and Skip button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Image.asset(
+                      'assets/images/app_logo.png',
+                      height: 40,
+                      fit: BoxFit.contain,
                     ),
-                  ),
+                    TextButton(
+                      onPressed: _completeOnboarding,
+                      child: const Text(
+                        'Skip',
+                        style: TextStyle(color: Colors.white60),
+                      ),
+                    ),
+                  ],
                 ),
               ),
 

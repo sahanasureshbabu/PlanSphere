@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +15,7 @@ import 'package:plansphere/core/widgets/app_snackbar.dart';
 import 'package:plansphere/presentation/providers/auth_provider.dart';
 import 'package:plansphere/presentation/providers/bill_provider.dart';
 import 'package:plansphere/presentation/providers/document_provider.dart';
+import 'package:plansphere/core/utils/responsive_layout.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -42,14 +45,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) return;
 
-      final file = File(picked.path);
-
-      // ✅ FIXED: null-safe UID usage
       final storageRef = FirebaseStorage.instance
           .ref('${AppConstants.profileImagesPath}/${currentUser.uid}.jpg');
 
-      await storageRef.putFile(file);
-      final url = await storageRef.getDownloadURL();
+      final metadata = SettableMetadata(contentType: 'image/jpeg');
+
+      const timeoutDuration = Duration(seconds: 8);
+
+      if (kIsWeb) {
+        final bytes = await picked.readAsBytes();
+        await storageRef.putData(bytes, metadata).timeout(timeoutDuration);
+      } else {
+        await storageRef.putFile(File(picked.path), metadata).timeout(timeoutDuration);
+      }
+
+      final url = await storageRef.getDownloadURL().timeout(timeoutDuration);
 
       await ref.read(authServiceProvider).updateUserProfile(
             uid: currentUser.uid,
@@ -102,10 +112,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final billStats = ref.watch(billStatsProvider);
     final documentsAsync = ref.watch(userDocumentsProvider);
 
-final documents = documentsAsync.maybeWhen(
-  data: (data) => data,
-  orElse: () => [],
-);
+    final documents = documentsAsync.maybeWhen(
+      data: (data) => data,
+      orElse: () => [],
+    );
 
     final storageUsedMB =
         documents.fold<double>(0, (sum, d) => sum + (d.fileSizeMB ?? 0));
@@ -113,6 +123,224 @@ final documents = documentsAsync.maybeWhen(
     final storagePercent =
         (storageUsedMB / (AppConstants.maxStorageFreeGB * 1024))
             .clamp(0.0, 1.0);
+
+    final isWide = ResponsiveLayout.isWide(context);
+
+    Widget buildProfileHeader() {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: isWide
+            ? BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(16),
+              )
+            : const BoxDecoration(
+                gradient: AppColors.primaryGradient,
+              ),
+        child: Column(
+          children: [
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 48,
+                  backgroundColor: Colors.white.withOpacity(0.3),
+                  backgroundImage: user?.photoURL != null
+                      ? NetworkImage(user!.photoURL!)
+                      : null,
+                  child: user?.photoURL == null
+                      ? Text(
+                          (user?.displayName?.substring(0, 1) ?? 'U')
+                              .toUpperCase(),
+                          style: TextStyle(
+                            color: isWide ? AppColors.primary : Colors.white,
+                            fontSize: 36,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        )
+                      : null,
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: GestureDetector(
+                    onTap: _isUpdatingPhoto ? null : _pickAndUpdatePhoto,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: isWide ? AppColors.primary : Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: _isUpdatingPhoto
+                          ? Padding(
+                              padding: const EdgeInsets.all(6),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: isWide ? Colors.white : AppColors.primary,
+                              ),
+                            )
+                          : Icon(
+                              Icons.camera_alt_rounded,
+                              size: 16,
+                              color: isWide ? Colors.white : AppColors.primary,
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              user?.displayName ?? 'User',
+              style: TextStyle(
+                color: isWide ? Theme.of(context).textTheme.titleLarge?.color : Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              user?.email ?? '',
+              style: TextStyle(
+                color: isWide ? Theme.of(context).textTheme.bodySmall?.color : Colors.white70,
+                fontSize: 14,
+              ),
+            ),
+            if (isWide) ...[
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                onPressed: _signOut,
+                icon: const Icon(Icons.logout_rounded, color: AppColors.error),
+                label: const Text('Sign Out', style: TextStyle(color: AppColors.error)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.error),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    if (isWide) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('My Profile'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_rounded),
+            onPressed: () => context.pop(),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.settings_rounded),
+              onPressed: () => context.push('/settings'),
+            ),
+          ],
+        ),
+        body: Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left Column (40% width) - Profile card with Sign Out
+                Expanded(
+                  flex: 4,
+                  child: buildProfileHeader(),
+                ),
+                const SizedBox(width: 40),
+                // Right Column (60% width) - Statistics and storage
+                Expanded(
+                  flex: 6,
+                  child: Column(
+                    children: [
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Row(
+                            children: [
+                              _StatItem(
+                                value: '${billStats.totalBills}',
+                                label: 'Bills',
+                                color: AppColors.primary,
+                              ),
+                              const _StatDivider(),
+                              _StatItem(
+                                value: '${billStats.activeWarranties}',
+                                label: 'Warranties',
+                                color: AppColors.success,
+                              ),
+                              const _StatDivider(),
+                              _StatItem(
+                                value: '${documents.length}',
+                                label: 'Documents',
+                                color: AppColors.info,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.cloud_rounded,
+                                  color: AppColors.primary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text('Storage Usage'),
+                                const Spacer(),
+                                Text(
+                                  '${storageUsedMB.toStringAsFixed(1)} MB / 1 GB',
+                                  style: TextStyle(
+                                    color: Colors.grey[500],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            LinearPercentIndicator(
+                              lineHeight: 8,
+                              percent: storagePercent,
+                              backgroundColor:
+                                  Colors.grey.withOpacity(0.15),
+                              progressColor: storagePercent > 0.8
+                                  ? AppColors.error
+                                  : AppColors.primary,
+                              barRadius: const Radius.circular(4),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -132,91 +360,7 @@ final documents = documentsAsync.maybeWhen(
         child: Column(
           children: [
             // ================= HEADER =================
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                gradient: AppColors.primaryGradient,
-              ),
-              child: Column(
-                children: [
-                  Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 48,
-                        backgroundColor:
-                            Colors.white.withValues(alpha: 0.3),
-                        backgroundImage: user?.photoURL != null
-                            ? NetworkImage(user!.photoURL!)
-                            : null,
-                        child: user?.photoURL == null
-                            ? Text(
-                                (user?.displayName?.substring(0, 1) ?? 'U')
-                                    .toUpperCase(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 36,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              )
-                            : null,
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: GestureDetector(
-                          onTap:
-                              _isUpdatingPhoto ? null : _pickAndUpdatePhoto,
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.2),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                            child: _isUpdatingPhoto
-                                ? const Padding(
-                                    padding: EdgeInsets.all(6),
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(
-                                    Icons.camera_alt_rounded,
-                                    size: 16,
-                                    color: AppColors.primary,
-                                  ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    user?.displayName ?? 'User',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    user?.email ?? '',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            buildProfileHeader(),
 
             // ================= BODY =================
             Padding(
@@ -280,7 +424,7 @@ final documents = documentsAsync.maybeWhen(
                           lineHeight: 8,
                           percent: storagePercent,
                           backgroundColor:
-                              Colors.grey.withValues(alpha: 0.15),
+                              Colors.grey.withOpacity(0.15),
                           progressColor: storagePercent > 0.8
                               ? AppColors.error
                               : AppColors.primary,
@@ -288,6 +432,17 @@ final documents = documentsAsync.maybeWhen(
                           padding: EdgeInsets.zero,
                         ),
                       ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+                  OutlinedButton.icon(
+                    onPressed: _signOut,
+                    icon: const Icon(Icons.logout_rounded, color: AppColors.error),
+                    label: const Text('Sign Out', style: TextStyle(color: AppColors.error)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.error),
+                      minimumSize: const Size(double.infinity, 48),
                     ),
                   ),
                 ],

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,9 +16,10 @@ import 'package:plansphere/core/widgets/app_snackbar.dart';
 import 'package:plansphere/presentation/providers/bill_provider.dart';
 import 'package:plansphere/data/models/bill_model.dart';
 import 'package:plansphere/data/services/ocr_service.dart';
+import 'package:plansphere/core/utils/responsive_layout.dart';
 
 class AddBillScreen extends ConsumerStatefulWidget {
-  final OcrResult? ocrResult; // Accept OCR result
+  final OcrResult? ocrResult;
   const AddBillScreen({super.key, this.ocrResult});
 
   @override
@@ -29,7 +31,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   final _titleCtrl = TextEditingController();
   final _amountCtrl = TextEditingController();
   final _storeCtrl = TextEditingController();
-  final _brandCtrl = TextEditingController(text: 'Generic'); // Brand control
+  final _brandCtrl = TextEditingController(text: 'Generic');
   final _descCtrl = TextEditingController();
   final _tagsCtrl = TextEditingController();
 
@@ -38,9 +40,9 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
   DateTime _purchaseDate = DateTime.now();
   bool _hasWarranty = false;
   int _warrantyMonths = 12;
-  double _ocrConfidenceScore = 1.0; // Track confidence score
-  File? _imageFile;
-  File? _pdfFile;
+  double _ocrConfidenceScore = 1.0;
+  XFile? _imageFile;
+  PlatformFile? _pdfFile;
   bool _isLoading = false;
 
   final _imagePicker = ImagePicker();
@@ -82,7 +84,7 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
       maxWidth: 1200,
     );
     if (picked != null) {
-      setState(() => _imageFile = File(picked.path));
+      setState(() => _imageFile = picked);
     }
   }
 
@@ -91,8 +93,8 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
       type: FileType.custom,
       allowedExtensions: ['pdf'],
     );
-    if (result?.files.single.path != null) {
-      setState(() => _pdfFile = File(result!.files.single.path!));
+    if (result != null && result.files.isNotEmpty) {
+      setState(() => _pdfFile = result.files.single);
     }
   }
 
@@ -114,10 +116,6 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
 
   Future<void> _saveBill() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_imageFile == null && _pdfFile == null) {
-      AppSnackbar.showError(context, 'Please upload a bill image or PDF');
-      return;
-    }
 
     setState(() => _isLoading = true);
 
@@ -161,15 +159,186 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
     setState(() => _isLoading = false);
 
     if (id != null) {
+      ref.invalidate(userBillsProvider);
+      ref.invalidate(activeWarrantiesProvider);
+      ref.invalidate(expiringSoonWarrantiesProvider);
       AppSnackbar.showSuccess(context, 'Bill added successfully!');
       context.pop();
     } else {
-      AppSnackbar.showError(context, 'Failed to save bill. Please try again.');
+      final state = ref.read(billCrudProvider);
+      final errorMsg = state.hasError ? state.error.toString() : 'Please try again.';
+      AppSnackbar.showError(context, 'Failed to save bill: $errorMsg');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isWide = ResponsiveLayout.isWide(context);
+
+    final formBody = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CustomTextField(
+          controller: _titleCtrl,
+          label: 'Title *',
+          hint: 'e.g. Samsung TV Purchase',
+          prefixIcon: Icons.title_rounded,
+          validator: (v) =>
+              v?.isEmpty ?? true ? 'Title is required' : null,
+        ),
+        const SizedBox(height: 14),
+
+        // Category
+        DropdownButtonFormField<String>(
+          value: _selectedCategory,
+          decoration: const InputDecoration(
+            labelText: 'Category',
+            prefixIcon: Icon(Icons.category_rounded),
+          ),
+          items: AppConstants.billCategories
+              .map((cat) => DropdownMenuItem(
+                    value: cat,
+                    child: Text(cat),
+                  ))
+              .toList(),
+          onChanged: (v) =>
+              setState(() => _selectedCategory = v!),
+        ),
+        const SizedBox(height: 14),
+
+        // Amount
+        CustomTextField(
+          controller: _amountCtrl,
+          label: 'Amount (₹) *',
+          hint: 'e.g. 45999',
+          prefixIcon: Icons.currency_rupee_rounded,
+          keyboardType:
+              const TextInputType.numberWithOptions(decimal: true),
+          validator: (v) {
+            if (v?.isEmpty ?? true) return 'Amount is required';
+            if (double.tryParse(v!.replaceAll(',', '')) == null) {
+              return 'Enter a valid amount';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 14),
+
+        // Store Name
+        CustomTextField(
+          controller: _storeCtrl,
+          label: 'Store / Merchant Name',
+          hint: 'e.g. Croma, Amazon',
+          prefixIcon: Icons.store_rounded,
+        ),
+        const SizedBox(height: 14),
+
+        // Brand Input Field
+        CustomTextField(
+          controller: _brandCtrl,
+          label: 'Brand Name',
+          hint: 'e.g. Samsung, Apple, Sony',
+          prefixIcon: Icons.branding_watermark_rounded,
+        ),
+        const SizedBox(height: 14),
+
+        // Purchase Date
+        GestureDetector(
+          onTap: _selectDate,
+          child: AbsorbPointer(
+            child: CustomTextField(
+              controller: TextEditingController(
+                text: DateFormat('dd MMM yyyy').format(_purchaseDate),
+              ),
+              label: 'Purchase Date *',
+              hint: 'Select date',
+              prefixIcon: Icons.calendar_today_rounded,
+              suffixIcon: const Icon(Icons.arrow_drop_down_rounded),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // Description
+        CustomTextField(
+          controller: _descCtrl,
+          label: 'Description',
+          hint: 'Additional notes about this bill...',
+          prefixIcon: Icons.notes_rounded,
+          maxLines: 3,
+        ),
+        const SizedBox(height: 14),
+
+        // Tags
+        CustomTextField(
+          controller: _tagsCtrl,
+          label: 'Tags',
+          hint: 'e.g. home, kitchen, gift (comma separated)',
+          prefixIcon: Icons.label_outline_rounded,
+        ),
+
+        const SizedBox(height: 24),
+
+        // Warranty Section
+        const _SectionTitle(title: 'Warranty Details'),
+        const SizedBox(height: 8),
+
+        SwitchListTile(
+          value: _hasWarranty,
+          onChanged: (v) => setState(() => _hasWarranty = v),
+          title: const Text('Has Warranty'),
+          subtitle: const Text('Enable to track warranty expiry'),
+          activeThumbColor: AppColors.primary,
+          contentPadding: EdgeInsets.zero,
+        ),
+
+        if (_hasWarranty) ...[
+          const SizedBox(height: 12),
+          Text('Warranty Duration: $_warrantyMonths months',
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+          const SizedBox(height: 8),
+          Slider(
+            value: _warrantyMonths.toDouble(),
+            min: 1,
+            max: 120,
+            divisions: 119,
+            label: '$_warrantyMonths months',
+            activeColor: AppColors.primary,
+            onChanged: (v) =>
+                setState(() => _warrantyMonths = v.round()),
+          ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.successLight,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline_rounded,
+                    color: AppColors.success, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  'Warranty expires on ${DateFormat('dd MMM yyyy').format(_warrantyExpiryDate)}',
+                  style: const TextStyle(
+                      color: AppColors.success, fontSize: 13, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ),
+        ],
+
+        const SizedBox(height: 32),
+
+        GradientButton(
+          onPressed: _isLoading ? null : _saveBill,
+          isLoading: _isLoading,
+          text: 'Save Bill',
+          icon: Icons.save_rounded,
+        ),
+      ],
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Add Bill'),
@@ -180,298 +349,271 @@ class _AddBillScreenState extends ConsumerState<AddBillScreen> {
       ),
       body: Form(
         key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(AppConstants.paddingM),
-          children: [
-            // Record Type
-            const _SectionTitle(title: 'Record Type'),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: AppConstants.recordTypes.map((type) {
-                final isSelected = _selectedRecordType == type;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedRecordType = type;
-                      _hasWarranty = type == 'Warranty Bill';
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.primary.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.primary.withOpacity(0.2),
+        child: isWide
+            ? Center(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 1150),
+                  padding: const EdgeInsets.all(AppConstants.paddingL),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Left Column: Upload cards and Image Previews
+                      Expanded(
+                        flex: 4,
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const _SectionTitle(title: 'Record Type'),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: AppConstants.recordTypes.map((type) {
+                                  final isSelected = _selectedRecordType == type;
+                                  return GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedRecordType = type;
+                                        _hasWarranty = type == 'Warranty Bill';
+                                      });
+                                    },
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 200),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 14, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? AppColors.primary
+                                            : AppColors.primary.withOpacity(0.08),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? AppColors.primary
+                                              : AppColors.primary.withOpacity(0.2),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        type,
+                                        style: TextStyle(
+                                          color: isSelected ? Colors.white : AppColors.primary,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                              const SizedBox(height: 24),
+                              const _SectionTitle(title: 'Upload Bill'),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _UploadCard(
+                                      icon: Icons.image_rounded,
+                                      label: _imageFile != null ? 'Image Added ✓' : 'Upload Image',
+                                      color: AppColors.primary,
+                                      isSelected: _imageFile != null,
+                                      onTap: () => _showImageSourceDialog(),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _UploadCard(
+                                      icon: Icons.picture_as_pdf_rounded,
+                                      label: _pdfFile != null ? 'PDF Added ✓' : 'Upload PDF',
+                                      color: AppColors.accent,
+                                      isSelected: _pdfFile != null,
+                                      onTap: _pickPdf,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+                              if (_imageFile != null)
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: kIsWeb
+                                      ? Image.network(
+                                          _imageFile!.path,
+                                          height: 240,
+                                          width: double.infinity,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : Image.file(
+                                          File(_imageFile!.path),
+                                          height: 240,
+                                          width: double.infinity,
+                                          fit: BoxFit.cover,
+                                        ),
+                                ),
+                              if (_pdfFile != null)
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.accent.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: AppColors.accent.withOpacity(0.3)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.picture_as_pdf_rounded, color: AppColors.accent),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          _pdfFile!.name,
+                                          style: const TextStyle(fontWeight: FontWeight.bold),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      type,
-                      style: TextStyle(
-                        color: isSelected ? Colors.white : AppColors.primary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                      const SizedBox(width: 40),
+                      // Right Column: Form scroll view
+                      Expanded(
+                        flex: 6,
+                        child: SingleChildScrollView(
+                          child: formBody,
+                        ),
                       ),
+                    ],
+                  ),
+                ),
+              )
+            : ListView(
+                padding: const EdgeInsets.all(AppConstants.paddingM),
+                children: [
+                  const _SectionTitle(title: 'Record Type'),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: AppConstants.recordTypes.map((type) {
+                      final isSelected = _selectedRecordType == type;
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedRecordType = type;
+                            _hasWarranty = type == 'Warranty Bill';
+                          });
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.primary.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.primary.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Text(
+                            type,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : AppColors.primary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 24),
+                  const _SectionTitle(title: 'Upload Bill'),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _UploadCard(
+                          icon: Icons.image_rounded,
+                          label: _imageFile != null ? 'Image Added ✓' : 'Upload Image',
+                          color: AppColors.primary,
+                          isSelected: _imageFile != null,
+                          onTap: () => _showImageSourceDialog(),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _UploadCard(
+                          icon: Icons.picture_as_pdf_rounded,
+                          label: _pdfFile != null ? 'PDF Added ✓' : 'Upload PDF',
+                          color: AppColors.accent,
+                          isSelected: _pdfFile != null,
+                          onTap: _pickPdf,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_imageFile != null) ...[
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: kIsWeb
+                          ? Image.network(
+                              _imageFile!.path,
+                              height: 160,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            )
+                          : Image.file(
+                              File(_imageFile!.path),
+                              height: 160,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
                     ),
-                  ),
-                );
-              }).toList(),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Upload Section
-            const _SectionTitle(title: 'Upload Bill'),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: _UploadCard(
-                    icon: Icons.image_rounded,
-                    label: _imageFile != null ? 'Image Added ✓' : 'Upload Image',
-                    color: AppColors.primary,
-                    isSelected: _imageFile != null,
-                    onTap: () => _showImageSourceDialog(),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _UploadCard(
-                    icon: Icons.picture_as_pdf_rounded,
-                    label: _pdfFile != null ? 'PDF Added ✓' : 'Upload PDF',
-                    color: AppColors.accent,
-                    isSelected: _pdfFile != null,
-                    onTap: _pickPdf,
-                  ),
-                ),
-              ],
-            ),
-
-            // Image preview
-            if (_imageFile != null) ...[
-              const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.file(
-                  _imageFile!,
-                  height: 160,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 24),
-
-            // Basic Info
-            const _SectionTitle(title: 'Bill Details'),
-            const SizedBox(height: 8),
-
-            // OCR Confidence display if available
-            if (widget.ocrResult != null) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: _ocrConfidenceScore < 0.80 ? Colors.amber.withOpacity(0.12) : AppColors.successLight,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      _ocrConfidenceScore < 0.80 ? Icons.warning_amber_rounded : Icons.check_circle_rounded,
-                      color: _ocrConfidenceScore < 0.80 ? Colors.orange : AppColors.success,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'OCR Confidence Score: ${(_ocrConfidenceScore * 100).toStringAsFixed(1)}%',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: _ocrConfidenceScore < 0.80 ? Colors.orange[800] : AppColors.success,
-                        fontSize: 13,
+                  ],
+                  if (_pdfFile != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.accent.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.picture_as_pdf_rounded, color: AppColors.accent),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _pdfFile!.name,
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
-                ),
+                  const SizedBox(height: 24),
+                  formBody,
+                  const SizedBox(height: 40),
+                ],
               ),
-            ],
-
-            CustomTextField(
-              controller: _titleCtrl,
-              label: 'Title *',
-              hint: 'e.g. Samsung TV Purchase',
-              prefixIcon: Icons.title_rounded,
-              validator: (v) =>
-                  v?.isEmpty ?? true ? 'Title is required' : null,
-            ),
-            const SizedBox(height: 12),
-
-            // Category
-            DropdownButtonFormField<String>(
-              initialValue: _selectedCategory,
-              decoration: const InputDecoration(
-                labelText: 'Category',
-                prefixIcon: Icon(Icons.category_rounded),
-              ),
-              items: AppConstants.billCategories
-                  .map((cat) => DropdownMenuItem(
-                        value: cat,
-                        child: Text(cat),
-                      ))
-                  .toList(),
-              onChanged: (v) =>
-                  setState(() => _selectedCategory = v!),
-            ),
-            const SizedBox(height: 12),
-
-            // Amount
-            CustomTextField(
-              controller: _amountCtrl,
-              label: 'Amount (₹) *',
-              hint: 'e.g. 45999',
-              prefixIcon: Icons.currency_rupee_rounded,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              validator: (v) {
-                if (v?.isEmpty ?? true) return 'Amount is required';
-                if (double.tryParse(v!.replaceAll(',', '')) == null) {
-                  return 'Enter a valid amount';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 12),
-
-            // Store Name
-            CustomTextField(
-              controller: _storeCtrl,
-              label: 'Store / Merchant Name',
-              hint: 'e.g. Croma, Amazon',
-              prefixIcon: Icons.store_rounded,
-            ),
-            const SizedBox(height: 12),
-
-            // Brand Input Field (Added)
-            CustomTextField(
-              controller: _brandCtrl,
-              label: 'Brand Name',
-              hint: 'e.g. Samsung, Apple, Sony',
-              prefixIcon: Icons.branding_watermark_rounded,
-            ),
-            const SizedBox(height: 12),
-
-            // Purchase Date
-            GestureDetector(
-              onTap: _selectDate,
-              child: AbsorbPointer(
-                child: CustomTextField(
-                  controller: TextEditingController(
-                    text: DateFormat('dd MMM yyyy').format(_purchaseDate),
-                  ),
-                  label: 'Purchase Date *',
-                  hint: 'Select date',
-                  prefixIcon: Icons.calendar_today_rounded,
-                  suffixIcon: const Icon(Icons.arrow_drop_down_rounded),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Description
-            CustomTextField(
-              controller: _descCtrl,
-              label: 'Description',
-              hint: 'Additional notes about this bill...',
-              prefixIcon: Icons.notes_rounded,
-              maxLines: 3,
-            ),
-            const SizedBox(height: 12),
-
-            // Tags
-            CustomTextField(
-              controller: _tagsCtrl,
-              label: 'Tags',
-              hint: 'e.g. home, kitchen, gift (comma separated)',
-              prefixIcon: Icons.label_outline_rounded,
-            ),
-
-            const SizedBox(height: 24),
-
-            // Warranty Section
-            const _SectionTitle(title: 'Warranty Details'),
-            const SizedBox(height: 8),
-
-            SwitchListTile(
-              value: _hasWarranty,
-              onChanged: (v) => setState(() => _hasWarranty = v),
-              title: const Text('Has Warranty'),
-              subtitle: const Text('Enable to track warranty expiry'),
-              activeThumbColor: AppColors.primary,
-              contentPadding: EdgeInsets.zero,
-            ),
-
-            if (_hasWarranty) ...[
-              const SizedBox(height: 12),
-              Text('Warranty Duration: $_warrantyMonths months',
-                  style: const TextStyle(fontWeight: FontWeight.w500)),
-              const SizedBox(height: 8),
-              Slider(
-                value: _warrantyMonths.toDouble(),
-                min: 1,
-                max: 120,
-                divisions: 119,
-                label: '$_warrantyMonths months',
-                activeColor: AppColors.primary,
-                onChanged: (v) =>
-                    setState(() => _warrantyMonths = v.round()),
-              ),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.successLight,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.info_outline_rounded,
-                        color: AppColors.success, size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Warranty expires on ${DateFormat('dd MMM yyyy').format(_warrantyExpiryDate)}',
-                      style: const TextStyle(
-                          color: AppColors.success, fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 32),
-
-            GradientButton(
-              onPressed: _isLoading ? null : _saveBill,
-              isLoading: _isLoading,
-              text: 'Save Bill',
-              icon: Icons.save_rounded,
-            ),
-
-            const SizedBox(height: 40),
-          ],
-        ),
       ),
     );
   }
 
   void _showImageSourceDialog() {
+    if (kIsWeb) {
+      _pickImage(ImageSource.gallery);
+      return;
+    }
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
@@ -510,7 +652,7 @@ class _SectionTitle extends StatelessWidget {
     return Text(
       title,
       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: AppColors.primary,
           ),
     );
@@ -559,7 +701,7 @@ class _UploadCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 color: color,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],

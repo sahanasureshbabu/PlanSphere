@@ -7,6 +7,8 @@ class ServiceRecord {
   final String technicianName;
   final String description;
   final String? receiptUrl;
+  final String serviceType;
+  final DateTime? nextServiceDate;
 
   ServiceRecord({
     required this.id,
@@ -15,6 +17,8 @@ class ServiceRecord {
     required this.technicianName,
     required this.description,
     this.receiptUrl,
+    this.serviceType = 'General Maintenance',
+    this.nextServiceDate,
   });
 
   factory ServiceRecord.fromMap(Map<String, dynamic> map) {
@@ -29,6 +33,12 @@ class ServiceRecord {
       technicianName: map['technicianName'] ?? '',
       description: map['description'] ?? '',
       receiptUrl: map['receiptUrl'],
+      serviceType: map['serviceType'] ?? 'General Maintenance',
+      nextServiceDate: map['nextServiceDate'] is Timestamp
+          ? (map['nextServiceDate'] as Timestamp).toDate()
+          : map['nextServiceDate'] != null
+              ? DateTime.tryParse(map['nextServiceDate'].toString())
+              : null,
     );
   }
 
@@ -40,6 +50,8 @@ class ServiceRecord {
       'technicianName': technicianName,
       'description': description,
       'receiptUrl': receiptUrl,
+      'serviceType': serviceType,
+      'nextServiceDate': nextServiceDate != null ? Timestamp.fromDate(nextServiceDate!) : null,
     };
   }
 
@@ -50,6 +62,8 @@ class ServiceRecord {
     String? technicianName,
     String? description,
     String? receiptUrl,
+    String? serviceType,
+    DateTime? nextServiceDate,
   }) {
     return ServiceRecord(
       id: id ?? this.id,
@@ -58,6 +72,8 @@ class ServiceRecord {
       technicianName: technicianName ?? this.technicianName,
       description: description ?? this.description,
       receiptUrl: receiptUrl ?? this.receiptUrl,
+      serviceType: serviceType ?? this.serviceType,
+      nextServiceDate: nextServiceDate ?? this.nextServiceDate,
     );
   }
 }

@@ -43,16 +43,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _loadSettings() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    final doc = await FirebaseFirestore.instance
-        .collection(AppConstants.usersCollection)
-        .doc(user.uid)
-        .get();
-    if (doc.exists && mounted) {
-      final data = doc.data()!;
-      setState(() {
-        _biometricEnabled = data['biometricEnabled'] ?? false;
-        _notificationsEnabled = data['notificationsEnabled'] ?? true;
-      });
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection(AppConstants.usersCollection)
+          .doc(user.uid)
+          .get();
+      if (doc.exists && mounted) {
+        final data = doc.data()!;
+        setState(() {
+          _biometricEnabled = data['biometricEnabled'] ?? false;
+          _notificationsEnabled = data['notificationsEnabled'] ?? true;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading settings from Firestore: $e');
     }
   }
 
@@ -76,10 +80,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _saveUserSetting(String key, dynamic value) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    await FirebaseFirestore.instance
-        .collection(AppConstants.usersCollection)
-        .doc(user.uid)
-        .update({key: value});
+    try {
+      await FirebaseFirestore.instance
+          .collection(AppConstants.usersCollection)
+          .doc(user.uid)
+          .update({key: value});
+    } catch (e) {
+      debugPrint('Error saving user setting to Firestore: $e');
+    }
   }
 
   Future<void> _triggerManualBackup() async {
@@ -212,8 +220,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           onPressed: () => context.pop(),
         ),
       ),
-      body: ListView(
-        children: [
+      body: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: ListView(
+            children: [
           // Appearance
           const _SectionHeader(title: 'Appearance'),
           _SettingsTile(
@@ -343,6 +354,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           const SizedBox(height: 40),
         ],
+      ),
+        ),
       ),
     );
   }

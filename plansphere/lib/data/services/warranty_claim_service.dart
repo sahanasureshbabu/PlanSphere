@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:plansphere/core/constants/app_constants.dart';
 import 'package:plansphere/data/models/bill_model.dart';
 
@@ -12,18 +13,29 @@ class WarrantyClaimService {
     required String userEmail,
     required String defectDescription,
     required String resolutionSought,
+    String? serviceCenterName,
+    String? supportEmail,
+    String? customerCareNumber,
   }) {
     final purchaseDateFormatted = '${bill.purchaseDate.day}/${bill.purchaseDate.month}/${bill.purchaseDate.year}';
     final expiryDateFormatted = bill.warrantyExpiryDate != null
         ? '${bill.warrantyExpiryDate!.day}/${bill.warrantyExpiryDate!.month}/${bill.warrantyExpiryDate!.year}'
         : 'N/A';
 
+    final toName = serviceCenterName != null && serviceCenterName.isNotEmpty
+        ? serviceCenterName
+        : '${bill.storeName} / ${bill.brand} Care Center';
+
+    final toContact = (supportEmail != null && supportEmail.isNotEmpty) || (customerCareNumber != null && customerCareNumber.isNotEmpty)
+        ? '\nContact: ${customerCareNumber ?? ""} ${supportEmail != null && supportEmail.isNotEmpty ? "($supportEmail)" : ""}'
+        : '';
+
     return '''
 Date: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}
 
 To,
 Customer Support Services / Warranty Claims Division
-${bill.storeName} / ${bill.brand} Care Center
+$toName$toContact
 
 Subject: Formal Warranty Claim Request for ${bill.brand} ${bill.title}
 
@@ -69,9 +81,23 @@ Email: $userEmail
       updates['claimNotes'] = claimNotes;
     }
 
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
     await _firestore
+        .collection(AppConstants.usersCollection)
+        .doc(userId)
         .collection(AppConstants.billsCollection)
         .doc(billId)
         .update(updates);
+
+    try {
+      await _firestore
+          .collection(AppConstants.usersCollection)
+          .doc(userId)
+          .collection('warranties')
+          .doc(billId)
+          .update(updates);
+    } catch (_) {}
   }
 }

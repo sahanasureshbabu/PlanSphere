@@ -31,57 +31,86 @@ class NotificationsScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: user == null
-          ? const Center(child: Text('Not logged in'))
-          : StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection(AppConstants.notificationsCollection)
-                  .where('userId', isEqualTo: user.uid)
-                  .orderBy('createdAt', descending: true)
-                  .limit(50)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState ==
-                    ConnectionState.waiting) {
-                  return const Center(
-                      child: CircularProgressIndicator());
-                }
+      body: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: user == null
+              ? const Center(child: Text('Not logged in'))
+              : StreamBuilder<QuerySnapshot>(
+                  stream: _getNotificationsStream(user.uid),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return _EmptyNotifications();
+                    }
 
-                if (!snapshot.hasData ||
-                    snapshot.data!.docs.isEmpty) {
-                  return _EmptyNotifications();
-                }
+                    if (snapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Center(
+                          child: CircularProgressIndicator());
+                    }
 
-                final notifications = snapshot.data!.docs
-                    .map((doc) =>
-                        NotificationModel.fromFirestore(doc))
-                    .toList();
+                    if (!snapshot.hasData ||
+                        snapshot.data!.docs.isEmpty) {
+                      return _EmptyNotifications();
+                    }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: notifications.length,
-                  itemBuilder: (ctx, i) => _NotificationItem(
-                    notification: notifications[i],
-                  ).animate().fadeIn(delay: (i * 50).ms),
-                );
-              },
-            ),
+                    final notifications = snapshot.data!.docs
+                        .map((doc) =>
+                            NotificationModel.fromFirestore(doc))
+                        .toList();
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: notifications.length,
+                      itemBuilder: (ctx, i) => _NotificationItem(
+                        notification: notifications[i],
+                      ).animate().fadeIn(delay: (i * 50).ms),
+                    );
+                  },
+                ),
+        ),
+      ),
     );
+  }
+
+  Stream<QuerySnapshot> _getNotificationsStream(String uid) {
+    final path = '${AppConstants.usersCollection}/$uid/${AppConstants.notificationsCollection}';
+    debugPrint('[Firestore Query] Action: STREAM (Notifications)');
+    debugPrint('[Firestore Query] Path: $path');
+    debugPrint('[Firestore Query] Current UID: $uid');
+    
+    return FirebaseFirestore.instance
+        .collection(AppConstants.usersCollection)
+        .doc(uid)
+        .collection(AppConstants.notificationsCollection)
+        .orderBy('createdAt', descending: true)
+        .limit(50)
+        .snapshots();
   }
 
   Future<void> _markAllRead(String? userId) async {
     if (userId == null) return;
-    final batch = FirebaseFirestore.instance.batch();
-    final snapshot = await FirebaseFirestore.instance
-        .collection(AppConstants.notificationsCollection)
-        .where('userId', isEqualTo: userId)
-        .where('isRead', isEqualTo: false)
-        .get();
+    try {
+      final batch = FirebaseFirestore.instance.batch();
+      final path = '${AppConstants.usersCollection}/$userId/${AppConstants.notificationsCollection}';
+      debugPrint('[Firestore Query] Action: GET (Mark All Read)');
+      debugPrint('[Firestore Query] Path: $path');
+      debugPrint('[Firestore Query] Current UID: $userId');
 
-    for (final doc in snapshot.docs) {
-      batch.update(doc.reference, {'isRead': true});
+      final snapshot = await FirebaseFirestore.instance
+          .collection(AppConstants.usersCollection)
+          .doc(userId)
+          .collection(AppConstants.notificationsCollection)
+          .where('isRead', isEqualTo: false)
+          .get();
+
+      for (final doc in snapshot.docs) {
+        batch.update(doc.reference, {'isRead': true});
+      }
+      await batch.commit();
+    } catch (e) {
+      debugPrint('Error marking notifications read: $e');
     }
-    await batch.commit();
   }
 }
 
@@ -210,7 +239,11 @@ class _NotificationItem extends StatelessWidget {
 
   Future<void> _markRead(NotificationModel notification) async {
     if (!notification.isRead) {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
       await FirebaseFirestore.instance
+          .collection(AppConstants.usersCollection)
+          .doc(userId)
           .collection(AppConstants.notificationsCollection)
           .doc(notification.id)
           .update({'isRead': true});

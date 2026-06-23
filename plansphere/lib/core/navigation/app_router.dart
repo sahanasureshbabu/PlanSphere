@@ -1,9 +1,11 @@
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:plansphere/presentation/providers/auth_provider.dart';
 import 'package:plansphere/presentation/screens/splash/splash_screen.dart';
 import 'package:plansphere/presentation/screens/auth/login_screen.dart';
 import 'package:plansphere/presentation/screens/auth/register_screen.dart';
@@ -15,6 +17,7 @@ import 'package:plansphere/core/constants/app_colors.dart';
 import 'package:plansphere/presentation/screens/bills/bills_screen.dart';
 import 'package:plansphere/presentation/screens/bills/add_bill_screen.dart';
 import 'package:plansphere/presentation/screens/bills/bill_detail_screen.dart';
+import 'package:plansphere/presentation/screens/bills/shared_bill_view.dart';
 import 'package:plansphere/presentation/screens/bills/edit_bill_screen.dart';
 import 'package:plansphere/presentation/screens/scanner/bill_scanner_screen.dart';
 import 'package:plansphere/presentation/screens/analytics/analytics_screen.dart';
@@ -36,55 +39,60 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError('SharedPreferences must be initialized in main.dart');
 });
 
-final appRouterProvider = Provider<GoRouter>((ref) {
-  // authState watch is not used here but kept for context if needed later
-  // ignore: unused_local_variable
-  final authState = ref.watch(authStateProvider);
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen(
+      (_) => notifyListeners(),
+    );
+  }
 
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
+
+final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/splash',
-    debugLogDiagnostics: true, // Enabled for debugging
+    debugLogDiagnostics: true,
+    refreshListenable:
+        GoRouterRefreshStream(FirebaseAuth.instance.authStateChanges()),
 
-    // ================= REDIRECT LOGIC =================
     redirect: (context, state) {
       final location = state.uri.path;
+      final user = FirebaseAuth.instance.currentUser;
 
-      final authState = ref.read(authStateProvider);
-      final user = authState.value;
       final isLoggedIn = user != null;
-      final isLoading = authState.isLoading;
-
       final isSplash = location == '/splash';
       final isAuth = location.startsWith('/auth');
+      final isSharedBill = location.startsWith('/shared-bill');
 
-      // 1. Always allow splash
-      if (isSplash) return null;
+      debugPrint('ROUTER UID: ${user?.uid}');
+      debugPrint('ROUTER EMAIL: ${user?.email}');
 
-      // 2. Wait until Firebase auth finishes loading
-      if (isLoading) return null;
+      if (isSplash || isSharedBill) return null;
 
-      // 3. If NOT logged in → allow only auth screens
       if (!isLoggedIn) {
-        if (isAuth) return null;
-        return '/auth/login';
+        return isAuth ? null : '/auth/login';
       }
 
-      // 4. If logged in → block auth pages and redirect to home if at login
-      if (isLoggedIn && (isAuth || location == '/')) {
+      if (isLoggedIn && isAuth) {
         return '/home';
       }
 
       return null;
     },
 
-    // ================= ROUTES =================
     routes: [
       GoRoute(
         path: '/splash',
         builder: (context, state) => const SplashScreen(),
       ),
-
-      // AUTH
       GoRoute(
         path: '/auth/login',
         builder: (context, state) => const LoginScreen(),
@@ -98,34 +106,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ForgotPasswordScreen(),
       ),
 
-      // APP (MAIN SHELL TABS)
       ShellRoute(
         builder: (context, state, child) => MainShell(child: child),
         routes: [
-          GoRoute(
-            path: '/home',
-            builder: (context, state) => const HomeScreen(),
-          ),
-          GoRoute(
-            path: '/bills',
-            builder: (context, state) => const BillsScreen(),
-          ),
-          GoRoute(
-            path: '/warranty',
-            builder: (context, state) => const WarrantyScreen(),
-          ),
-          GoRoute(
-            path: '/documents',
-            builder: (context, state) => const DocumentsScreen(),
-          ),
-          GoRoute(
-            path: '/analytics',
-            builder: (context, state) => const AnalyticsScreen(),
-          ),
+          GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+          GoRoute(path: '/bills', builder: (context, state) => const BillsScreen()),
+          GoRoute(path: '/warranty', builder: (context, state) => const WarrantyScreen()),
+          GoRoute(path: '/documents', builder: (context, state) => const DocumentsScreen()),
+          GoRoute(path: '/analytics', builder: (context, state) => const AnalyticsScreen()),
         ],
       ),
 
-      // APP SUB-PAGES
       GoRoute(
         path: '/bills/add',
         builder: (context, state) {
@@ -136,28 +127,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return const AddBillScreen();
         },
       ),
-      GoRoute(
-        path: '/scanner',
-        builder: (context, state) => const BillScannerScreen(),
-      ),
-      GoRoute(
-        path: '/amc',
-        builder: (context, state) => const AmcScreen(),
-      ),
-      GoRoute(
-        path: '/service-history',
-        builder: (context, state) => const ServiceHistoryScreen(),
-      ),
-      GoRoute(
-        path: '/claim-assistant',
-        builder: (context, state) => const ClaimAssistantScreen(),
-      ),
+      GoRoute(path: '/scanner', builder: (context, state) => const BillScannerScreen()),
+      GoRoute(path: '/amc', builder: (context, state) => const AmcScreen()),
+      GoRoute(path: '/service-history', builder: (context, state) => const ServiceHistoryScreen()),
+      GoRoute(path: '/claim-assistant', builder: (context, state) => const ClaimAssistantScreen()),
       GoRoute(
         path: '/bills/:id',
         builder: (context, state) {
           final id = state.pathParameters['id']!;
           final initialTab = state.extra is int ? state.extra as int : null;
           return BillDetailScreen(billId: id, initialTab: initialTab);
+        },
+      ),
+      GoRoute(
+        path: '/shared-bill/:shareId',
+        builder: (context, state) {
+          final shareId = state.pathParameters['shareId']!;
+          return SharedBillView(shareId: shareId);
         },
       ),
       GoRoute(
@@ -174,26 +160,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return WarrantyDetailScreen(warrantyId: id);
         },
       ),
-      GoRoute(
-        path: '/settings',
-        builder: (context, state) => const SettingsScreen(),
-      ),
-      GoRoute(
-        path: '/search',
-        builder: (context, state) => const SearchScreen(),
-      ),
-      GoRoute(
-        path: '/notifications',
-        builder: (context, state) => const NotificationsScreen(),
-      ),
-      GoRoute(
-        path: '/profile',
-        builder: (context, state) => const ProfileScreen(),
-      ),
-      GoRoute(
-        path: '/family',
-        builder: (context, state) => const FamilyScreen(),
-      ),
+      GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
+      GoRoute(path: '/search', builder: (context, state) => const SearchScreen()),
+      GoRoute(path: '/notifications', builder: (context, state) => const NotificationsScreen()),
+      GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
+      GoRoute(path: '/family', builder: (context, state) => const FamilyScreen()),
       GoRoute(
         path: '/family/:id',
         builder: (context, state) {
@@ -203,84 +174,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
 
-
-    // ================= ERROR PAGE =================
     errorBuilder: (context, state) {
       return Scaffold(
-        body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF0F0E1A), Color(0xFF1A1930), Color(0xFF242340)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: Center(
-            child: Container(
-              margin: const EdgeInsets.all(24),
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.25),
-                    blurRadius: 30,
-                    offset: const Offset(0, 15),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent.withOpacity(0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.error_outline_rounded,
-                      size: 72,
-                      color: Colors.redAccent,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Page Not Found',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'The page "${state.uri.path}" could not be found.',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white60, fontSize: 14),
-                  ),
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => context.go('/home'),
-                      icon: const Icon(Icons.home_rounded),
-                      label: const Text('Back to Dashboard'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+        body: Center(
+          child: ElevatedButton.icon(
+            onPressed: () => context.go('/home'),
+            icon: const Icon(Icons.home_rounded),
+            label: const Text('Back to Dashboard'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
             ),
           ),
         ),

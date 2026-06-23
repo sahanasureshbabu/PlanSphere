@@ -24,11 +24,11 @@ class FamilyDetailScreen extends ConsumerWidget {
         ),
       ),
       body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection(AppConstants.familyGroupsCollection)
-            .doc(groupId)
-            .snapshots(),
+        stream: _getFamilyGroupStream(),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(child: Text('Group not found'));
+          }
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -257,17 +257,51 @@ class FamilyDetailScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _removeMember(
-      BuildContext context, String memberId) async {
-    final snapshot = await FirebaseFirestore.instance
+  Stream<DocumentSnapshot> _getFamilyGroupStream() {
+    final user = FirebaseAuth.instance.currentUser;
+    final path = AppConstants.familyGroupsCollection;
+    debugPrint('[Firestore Query] Action: STREAM (Family Group Details)');
+    debugPrint('[Firestore Query] Path: $path/$groupId');
+    debugPrint('[Firestore Query] Current UID: ${user?.uid}');
+
+    return FirebaseFirestore.instance
         .collection(AppConstants.familyGroupsCollection)
         .doc(groupId)
-        .get();
-    if (!snapshot.exists) return;
-    final data = snapshot.data() as Map<String, dynamic>;
-    final members = List<dynamic>.from(data['members'] ?? []);
-    members.removeWhere((m) => m['userId'] == memberId);
-    await snapshot.reference.update({'members': members});
+        .snapshots();
+  }
+
+  Future<void> _removeMember(
+      BuildContext context, String memberId) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final path = AppConstants.familyGroupsCollection;
+      debugPrint('[Firestore Query] Action: GET (Get Family Group for Remove Member)');
+      debugPrint('[Firestore Query] Path: $path/$groupId');
+      debugPrint('[Firestore Query] Current UID: ${user?.uid}');
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection(AppConstants.familyGroupsCollection)
+          .doc(groupId)
+          .get();
+      if (!snapshot.exists) return;
+      final data = snapshot.data() as Map<String, dynamic>;
+      final members = List<dynamic>.from(data['members'] ?? []);
+      members.removeWhere((m) => m['userId'] == memberId);
+      
+      final memberIds = List<dynamic>.from(data['memberIds'] ?? []);
+      memberIds.remove(memberId);
+
+      debugPrint('[Firestore Query] Action: UPDATE (Remove Member)');
+      debugPrint('[Firestore Query] Path: $path/$groupId');
+      debugPrint('[Firestore Query] Current UID: ${user?.uid}');
+
+      await snapshot.reference.update({
+        'members': members,
+        'memberIds': memberIds,
+      });
+    } catch (e) {
+      debugPrint('Error removing member: $e');
+    }
   }
 
   Future<void> _leaveGroup(

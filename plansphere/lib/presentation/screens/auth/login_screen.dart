@@ -69,37 +69,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  Future<void> _signInWithGoogle() async {
-    setState(() => _isLoading = true);
-
-    try {
-      await ref.read(authNotifierProvider.notifier).signInWithGoogle();
-
-      if (!mounted) return;
-
-      final state = ref.read(authNotifierProvider);
-
-      if (state.hasError) {
-        AppSnackbar.showError(
-          context,
-          _getAuthErrorMessage(state.error),
-        );
-      } else {
-        AppSnackbar.showSuccess(context, 'Login successful!');
-      }
-    } catch (e) {
-      if (!mounted) return;
-
-      AppSnackbar.showError(
-        context,
-        _getAuthErrorMessage(e),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
 
   String _getAuthErrorMessage(Object? error) {
     final e = error.toString().toLowerCase();
@@ -165,17 +134,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 40),
-
-                  const Text(
-                    'Welcome back!',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
+                  const SizedBox(height: 20),
+                  Center(
+                    child: Image.asset(
+                      'assets/images/app_logo.png',
+                      height: 80,
+                      fit: BoxFit.contain,
                     ),
-                  ).animate().fadeIn().slideX(begin: -0.2),
+                  ).animate().fadeIn().scale(duration: 400.ms),
+                  const SizedBox(height: 16),
+                  const Center(
+                    child: Text(
+                      'Welcome back!',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ).animate().fadeIn().slideY(begin: 0.2, end: 0),
 
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 32),
 
                   CustomTextField(
                     controller: _emailController,
@@ -237,11 +215,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                   const SizedBox(height: 16),
 
-                  TextButton(
-                    onPressed: _isLoading
-                        ? null
-                        : () => context.push('/auth/register'),
-                    child: const Text('Create account'),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: _isLoading
+                            ? null
+                            : () => context.push('/auth/forgot-password'),
+                        child: const Text(
+                          'Forgot Password?',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _isLoading
+                            ? null
+                            : () => context.push('/auth/register'),
+                        child: const Text(
+                          'Create Account',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

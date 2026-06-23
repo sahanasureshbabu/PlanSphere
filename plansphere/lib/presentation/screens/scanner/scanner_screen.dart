@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,7 +23,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   final OcrService _ocrService = OcrService();
   final _imagePicker = ImagePicker();
 
-  File? _selectedImage;
+  XFile? _selectedImage;
   bool _isScanning = false;
   OcrResult? _scanResult;
 
@@ -40,14 +41,14 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
     );
     if (picked != null) {
       setState(() {
-        _selectedImage = File(picked.path);
+        _selectedImage = picked;
         _scanResult = null;
       });
-      await _scanImage(File(picked.path));
+      await _scanImage(picked);
     }
   }
 
-  Future<void> _scanImage(File imageFile) async {
+  Future<void> _scanImage(XFile imageFile) async {
     setState(() => _isScanning = true);
     try {
       final result = await _ocrService.extractTextFromImage(imageFile);
@@ -144,10 +145,15 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
                     ? Stack(
                         fit: StackFit.expand,
                         children: [
-                          Image.file(
-                            _selectedImage!,
-                            fit: BoxFit.cover,
-                          ),
+                          kIsWeb
+                              ? Image.network(
+                                  _selectedImage!.path,
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.file(
+                                  File(_selectedImage!.path),
+                                  fit: BoxFit.cover,
+                                ),
                           if (_isScanning)
                             Container(
                               color: Colors.black54,

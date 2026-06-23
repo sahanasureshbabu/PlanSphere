@@ -7,6 +7,8 @@ import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:plansphere/core/constants/app_colors.dart';
 import 'package:plansphere/presentation/providers/bill_provider.dart';
 import 'package:plansphere/data/models/bill_model.dart';
+import 'package:plansphere/core/utils/responsive_layout.dart';
+import 'package:plansphere/core/constants/app_constants.dart';
 
 class WarrantyDetailScreen extends ConsumerWidget {
   final String warrantyId;
@@ -25,7 +27,52 @@ class WarrantyDetailScreen extends ConsumerWidget {
           return _WarrantyDetailContent(bill: bill);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_rounded),
+                    onPressed: () => context.pop(),
+                  ),
+                ),
+                const Spacer(),
+                const Icon(
+                  Icons.error_outline_rounded,
+                  size: 72,
+                  color: Colors.grey,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Unable to load warranty details',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Please check your connection and try again.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => ref.invalidate(selectedBillProvider(warrantyId)),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Retry'),
+                ),
+                const Spacer(flex: 2),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -42,6 +89,7 @@ class _WarrantyDetailContent extends StatelessWidget {
     final totalDays = (bill.warrantyDurationMonths ?? 12) * 30;
     final remainingPercent =
         days > 0 ? (days / totalDays).clamp(0.0, 1.0) : 0.0;
+    final isWide = ResponsiveLayout.isWide(context);
 
     Color statusColor;
     String statusText;
@@ -69,62 +117,186 @@ class _WarrantyDetailContent extends StatelessWidget {
         statusDesc = '';
     }
 
+    final statusWidget = Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [statusColor, statusColor.withOpacity(0.7)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          CircularPercentIndicator(
+            radius: 60,
+            lineWidth: 10,
+            percent: remainingPercent.toDouble(),
+            center: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '$days',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const Text('days',
+                    style: TextStyle(color: Colors.white70, fontSize: 12)),
+              ],
+            ),
+            progressColor: Colors.white,
+            backgroundColor: Colors.white.withOpacity(0.3),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            statusText,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            statusDesc,
+            style: const TextStyle(color: Colors.white70, fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+
+    final actionButton = SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () => context.push('/bills/${bill.id}'),
+        icon: const Icon(Icons.receipt_long_rounded),
+        label: const Text('View Original Bill'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: statusColor,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12)),
+        ),
+      ),
+    );
+
+    if (isWide) {
+      return Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          padding: const EdgeInsets.all(AppConstants.paddingL),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left Column (40% width)
+              Expanded(
+                flex: 4,
+                child: Column(
+                  children: [
+                    statusWidget,
+                    const SizedBox(height: 24),
+                    actionButton,
+                  ],
+                ),
+              ),
+              const SizedBox(width: 40),
+              // Right Column (60% width)
+              Expanded(
+                flex: 6,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SectionCard(
+                        title: 'Product Information',
+                        children: [
+                          _InfoRow(label: 'Product', value: bill.title),
+                          _InfoRow(label: 'Category', value: bill.category),
+                          _InfoRow(label: 'Store', value: bill.storeName.isNotEmpty ? bill.storeName : 'N/A'),
+                          _InfoRow(label: 'Purchase Date',
+                              value: DateFormat('dd MMM yyyy').format(bill.purchaseDate)),
+                          _InfoRow(label: 'Amount', value: '₹${bill.amount.toStringAsFixed(0)}'),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _SectionCard(
+                        title: 'Warranty Information',
+                        children: [
+                          _InfoRow(
+                            label: 'Duration',
+                            value: '${bill.warrantyDurationMonths ?? 0} months',
+                          ),
+                          if (bill.warrantyExpiryDate != null)
+                            _InfoRow(
+                              label: 'Expiry Date',
+                              value: DateFormat('dd MMM yyyy').format(bill.warrantyExpiryDate!),
+                            ),
+                          _InfoRow(
+                            label: 'Status',
+                            value: statusText,
+                            valueColor: statusColor,
+                          ),
+                          if (days > 0)
+                            _InfoRow(label: 'Remaining', value: '$days days'),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      if (status == WarrantyStatus.active ||
+                          status == WarrantyStatus.expiringSoon) ...[
+                        const _SectionCard(
+                          title: '📋 How to Claim Warranty',
+                          children: [
+                            _ClaimStep(
+                                step: 1,
+                                text: 'Keep the original bill/receipt ready'),
+                            _ClaimStep(
+                                step: 2,
+                                text: 'Contact the store/manufacturer support'),
+                            _ClaimStep(
+                                step: 3,
+                                text: 'Describe the issue clearly with product serial number'),
+                            _ClaimStep(
+                                step: 4,
+                                text: 'Request for repair/replacement as per warranty terms'),
+                            _ClaimStep(
+                                step: 5,
+                                text: 'Follow up with a written complaint if needed'),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        const _SectionCard(
+                          title: '📎 Required Documents',
+                          children: [
+                            _DocItem(text: 'Original purchase bill/receipt'),
+                            _DocItem(text: 'Warranty card (if provided)'),
+                            _DocItem(text: 'Product packaging with serial number'),
+                            _DocItem(text: 'Govt. ID proof (for some brands)'),
+                            _DocItem(text: 'Photos/videos of the defect'),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Status card
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [statusColor, statusColor.withOpacity(0.7)],
-              ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              children: [
-                CircularPercentIndicator(
-                  radius: 60,
-                  lineWidth: 10,
-                  percent: remainingPercent.toDouble(),
-                  center: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '$days',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const Text('days',
-                          style: TextStyle(color: Colors.white70, fontSize: 12)),
-                    ],
-                  ),
-                  progressColor: Colors.white,
-                  backgroundColor: Colors.white.withOpacity(0.3),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  statusText,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  statusDesc,
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
+          statusWidget,
 
           const SizedBox(height: 20),
 
@@ -214,20 +386,7 @@ class _WarrantyDetailContent extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Action
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => context.push('/bills/${bill.id}'),
-              icon: const Icon(Icons.receipt_long_rounded),
-              label: const Text('View Original Bill'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: statusColor,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ),
+          actionButton,
 
           const SizedBox(height: 40),
         ],

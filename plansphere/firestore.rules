@@ -1,68 +1,15 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // ── Users ──────────────────────────────────────────────────────────────
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == userId;
     }
 
-    // ── Bills ──────────────────────────────────────────────────────────────
-    match /bills/{billId} {
-      allow read, write: if request.auth != null &&
-        (resource == null || resource.data.userId == request.auth.uid ||
-         _inSameFamily(request.auth.uid, resource.data.familyGroupId));
-      allow create: if request.auth != null &&
-        request.resource.data.userId == request.auth.uid;
-    }
-
-    // ── Documents ──────────────────────────────────────────────────────────
-    match /documents/{docId} {
-      allow read, write: if request.auth != null &&
-        (resource == null || resource.data.userId == request.auth.uid ||
-         _inSameFamily(request.auth.uid, resource.data.familyGroupId));
-      allow create: if request.auth != null &&
-        request.resource.data.userId == request.auth.uid;
-    }
-
-    // ── Notifications ──────────────────────────────────────────────────────
-    match /notifications/{notifId} {
-      allow read, write: if request.auth != null &&
-        resource.data.userId == request.auth.uid;
-      allow create: if request.auth != null;
-    }
-
-    // ── Family Groups ──────────────────────────────────────────────────────
-    match /family_groups/{groupId} {
-      allow read: if request.auth != null && _isMember(request.auth.uid, groupId);
-      allow create: if request.auth != null;
-      allow update: if request.auth != null && _isMember(request.auth.uid, groupId);
-      allow delete: if request.auth != null && _isAdmin(request.auth.uid, groupId);
-    }
-
-    // ── Analytics ─────────────────────────────────────────────────────────
-    match /analytics/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // ── Settings ──────────────────────────────────────────────────────────
-    match /settings/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────
-    function _isMember(uid, groupId) {
-      let group = get(/databases/$(database)/documents/family_groups/$(groupId));
-      return group.data.members.hasAny([{'userId': uid}]);
-    }
-
-    function _isAdmin(uid, groupId) {
-      let group = get(/databases/$(database)/documents/family_groups/$(groupId));
-      return group.data.adminId == uid;
-    }
-
-    function _inSameFamily(uid, familyGroupId) {
-      return familyGroupId != null && _isMember(uid, familyGroupId);
+    match /shared_bills/{shareId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
     }
   }
 }

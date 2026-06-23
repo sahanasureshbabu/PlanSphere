@@ -33,15 +33,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     await Future.delayed(const Duration(milliseconds: 2800));
     if (!mounted) return;
 
-    // Bypass onboarding check; assume onboarding completed.
-    const bool onboardingDone = true;
-
     final authState = ref.read(authStateProvider);
     final user = authState.value;
 
-    if (!onboardingDone) {
-      context.go('/onboarding');
-    } else if (user == null) {
+    if (user == null) {
       context.go('/auth/login');
     } else {
       context.go('/home');
@@ -112,10 +107,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.receipt_long_rounded,
-                      size: 52,
-                      color: Colors.white,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(28),
+                      child: Image.asset(
+                        'assets/images/app_logo.png',
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   )
                       .animate()

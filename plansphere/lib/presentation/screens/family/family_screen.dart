@@ -33,11 +33,14 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
         ),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection(AppConstants.familyGroupsCollection)
-            .where('members', arrayContains: {'userId': user?.uid})
-            .snapshots(),
+        stream: _getFamilyGroupsStream(),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return _NoFamilyGroup(
+              onCreateGroup: () => _showCreateGroupSheet(),
+              onJoinGroup: () => _showJoinGroupSheet(),
+            );
+          }
           // Check if user has a family group
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -164,69 +167,112 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
     );
   }
 
+  Stream<QuerySnapshot>? _getFamilyGroupsStream() {
+    if (user == null) return null;
+    final path = AppConstants.familyGroupsCollection;
+    debugPrint('[Firestore Query] Action: STREAM (Family Groups)');
+    debugPrint('[Firestore Query] Path: $path?memberIds_contains=${user!.uid}');
+    debugPrint('[Firestore Query] Current UID: ${user!.uid}');
+
+    return FirebaseFirestore.instance
+        .collection(AppConstants.familyGroupsCollection)
+        .where('memberIds', arrayContains: user!.uid)
+        .snapshots();
+  }
+
   Future<void> _createFamilyGroup(String name) async {
     if (user == null) return;
-    final inviteCode =
-        const Uuid().v4().substring(0, 6).toUpperCase();
-    final groupData = {
-      'name': name,
-      'adminId': user!.uid,
-      'members': [
-        {
-          'userId': user!.uid,
-          'name': user!.displayName ?? 'Admin',
-          'email': user!.email ?? '',
-          'photoUrl': user!.photoURL,
-          'role': 'admin',
-          'joinedAt': Timestamp.fromDate(DateTime.now()),
-        }
-      ],
-      'inviteCode': inviteCode,
-      'createdAt': Timestamp.fromDate(DateTime.now()),
-    };
+    try {
+      final inviteCode =
+          const Uuid().v4().substring(0, 6).toUpperCase();
+      final groupData = {
+        'name': name,
+        'adminId': user!.uid,
+        'memberIds': [user!.uid],
+        'members': [
+          {
+            'userId': user!.uid,
+            'name': user!.displayName ?? 'Admin',
+            'email': user!.email ?? '',
+            'photoUrl': user!.photoURL,
+            'role': 'admin',
+            'joinedAt': Timestamp.fromDate(DateTime.now()),
+          }
+        ],
+        'inviteCode': inviteCode,
+        'createdAt': Timestamp.fromDate(DateTime.now()),
+      };
 
-    await FirebaseFirestore.instance
-        .collection(AppConstants.familyGroupsCollection)
-        .add(groupData);
+      final path = AppConstants.familyGroupsCollection;
+      debugPrint('[Firestore Query] Action: ADD (Create Family Group)');
+      debugPrint('[Firestore Query] Path: $path');
+      debugPrint('[Firestore Query] Current UID: ${user!.uid}');
 
-    if (mounted) {
-      AppSnackbar.showSuccess(
-          context, 'Family group "$name" created! Invite code: $inviteCode');
+      await FirebaseFirestore.instance
+          .collection(AppConstants.familyGroupsCollection)
+          .add(groupData);
+
+      if (mounted) {
+        AppSnackbar.showSuccess(
+            context, 'Family group "$name" created! Invite code: $inviteCode');
+      }
+    } catch (e) {
+      debugPrint('Error creating family group: $e');
+      if (mounted) {
+        AppSnackbar.showError(context, 'Failed to create family group. Please try again.');
+      }
     }
   }
 
   Future<void> _joinFamilyGroup(String inviteCode) async {
     if (user == null) return;
-    final snapshot = await FirebaseFirestore.instance
-        .collection(AppConstants.familyGroupsCollection)
-        .where('inviteCode', isEqualTo: inviteCode)
-        .get();
+    try {
+      final path = AppConstants.familyGroupsCollection;
+      debugPrint('[Firestore Query] Action: GET (Find Family Group by Invite Code)');
+      debugPrint('[Firestore Query] Path: $path?inviteCode=$inviteCode');
+      debugPrint('[Firestore Query] Current UID: ${user!.uid}');
 
-    if (snapshot.docs.isEmpty) {
-      if (mounted) {
-        AppSnackbar.showError(
-            context, 'Invalid invite code. Please check and try again.');
+      final snapshot = await FirebaseFirestore.instance
+          .collection(AppConstants.familyGroupsCollection)
+          .where('inviteCode', isEqualTo: inviteCode)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        if (mounted) {
+          AppSnackbar.showError(
+              context, 'Invalid invite code. Please check and try again.');
+        }
+        return;
       }
-      return;
-    }
 
-    final groupDoc = snapshot.docs.first;
-    final newMember = {
-      'userId': user!.uid,
-      'name': user!.displayName ?? 'Member',
-      'email': user!.email ?? '',
-      'photoUrl': user!.photoURL,
-      'role': 'member',
-      'joinedAt': Timestamp.fromDate(DateTime.now()),
-    };
+      final groupDoc = snapshot.docs.first;
+      final newMember = {
+        'userId': user!.uid,
+        'name': user!.displayName ?? 'Member',
+        'email': user!.email ?? '',
+        'photoUrl': user!.photoURL,
+        'role': 'member',
+        'joinedAt': Timestamp.fromDate(DateTime.now()),
+      };
 
-    await groupDoc.reference.update({
-      'members': FieldValue.arrayUnion([newMember]),
-    });
+      debugPrint('[Firestore Query] Action: UPDATE (Join Family Group)');
+      debugPrint('[Firestore Query] Path: $path/${groupDoc.id}');
+      debugPrint('[Firestore Query] Current UID: ${user!.uid}');
 
-    if (mounted) {
-      AppSnackbar.showSuccess(
-          context, 'You have joined the family group!');
+      await groupDoc.reference.update({
+        'memberIds': FieldValue.arrayUnion([user!.uid]),
+        'members': FieldValue.arrayUnion([newMember]),
+      });
+
+      if (mounted) {
+        AppSnackbar.showSuccess(
+            context, 'You have joined the family group!');
+      }
+    } catch (e) {
+      debugPrint('Error joining family group: $e');
+      if (mounted) {
+        AppSnackbar.showError(context, 'Failed to join family group. Please try again.');
+      }
     }
   }
 }
