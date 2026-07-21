@@ -129,9 +129,12 @@ def test_google_login(driver, case_num):
 # ─────────────────────────────────────────────────────────────
 
 # 2a. Smart Category Suggestion – 15 cases
+# Keywords must exactly match autoCategorize() logic in app.js:
+# Health: hospital, medical, pharmacy, doctor, medicine, checkup, apollo
+# Insurance: insurance, lic, policy, premium
 _electronics = ["MacBook Pro", "iPhone 16", "Sony PS5", "Samsung TV", "Dell Monitor"]
-_health       = ["Hospital checkup", "Apollo clinic", "Pharmeasy medicines", "Doctor fees", "Dental surgery"]
-_insurance    = ["LIC Policy", "Star Health premium", "HDFC Life insurance", "Term policy", "Car insurance"]
+_health       = ["Hospital checkup", "Apollo clinic", "Pharmeasy medicines", "Doctor fees", "Medicine prescription"]
+_insurance    = ["LIC Policy", "Star Health premium", "HDFC Life insurance", "Term policy", "Car insurance premium"]
 suggestion_cases = (
     [(f"{w} {i}", "Electronics", "Warranty Bill") for i, w in enumerate(_electronics)] +
     [(f"{w} {i}", "Health",      "Medical Bill")  for i, w in enumerate(_health)]      +
@@ -175,16 +178,18 @@ def test_warranty_duration(driver, purchase_date, btn_months, expected_expiry):
     assert driver.find_element(By.ID, "expiry-date").get_attribute("value") == expected_expiry
 
 # 2c. Form Validation – 10 cases
+# NOTE: expiry validation (err-expiry) only triggers when bill-type == 'Warranty Bill'
+# Medical Bill and Insurance types do NOT validate expiry in the form JS
 _fv = [
     ("",        "Electronics", "Warranty Bill",  500, "Store", "2026-01-01", "2026-12-31", "err-product"),
     ("Product", "Electronics", "Warranty Bill",    0, "Store", "2026-01-01", "2026-12-31", "err-amount"),
     ("Product", "Electronics", "Warranty Bill",  -10, "Store", "2026-01-01", "2026-12-31", "err-amount"),
     ("Product", "Electronics", "Warranty Bill",  500, "Store", "",           "2026-12-31", "err-purchase"),
     ("Product", "Electronics", "Warranty Bill",  500, "Store", "2026-05-01", "2026-04-01", "err-expiry"),
-    ("Product", "Health",      "Medical Bill",   500, "Store", "2026-05-01", "2026-03-10", "err-expiry"),
-    ("Product", "Health",      "Medical Bill",   500, "Store", "2026-05-01", "2026-03-11", "err-expiry"),
-    ("Product", "Insurance",   "Insurance",      500, "Store", "2026-05-01", "2026-03-12", "err-expiry"),
-    ("Product", "Insurance",   "Insurance",      500, "Store", "2026-06-01", "2026-05-30", "err-expiry"),
+    ("Product", "Electronics", "Warranty Bill",  500, "Store", "2026-05-01", "2026-03-10", "err-expiry"),
+    ("Product", "Electronics", "Warranty Bill",  500, "Store", "2026-05-01", "2026-03-11", "err-expiry"),
+    ("Product", "Electronics", "Warranty Bill",  500, "Store", "2026-05-01", "2026-03-12", "err-expiry"),
+    ("Product", "Electronics", "Warranty Bill",  500, "Store", "2026-06-01", "2026-05-30", "err-expiry"),
     ("Product", "Electronics", "Warranty Bill",  500, "Store", "2026-07-01", "2026-06-30", "err-expiry"),
 ]
 
@@ -254,8 +259,8 @@ def test_bills_filtering(driver, cat_filter, expected_count):
     cards = driver.find_elements(By.CSS_SELECTOR, "#bills-grid .bill-card")
     assert len(cards) == expected_count
 
-# 3b. Sort-By Options – 6 cases
-_sort_options = ["name-asc", "name-desc", "amount-asc", "amount-desc", "date-asc", "date-desc"]
+# 3b. Sort-By Options – 4 cases (only these values exist in the sort-by <select>)
+_sort_options = ["date-desc", "date-asc", "amount-desc", "amount-asc"]
 
 @pytest.mark.parametrize("sort_val", _sort_options)
 def test_bills_sort_options(driver, sort_val):
@@ -543,10 +548,14 @@ def test_smart_search(driver, query, exp_bills, exp_docs):
     driver.get(f"{BASE_URL}/search.html")
     WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, "query-input")))
     q = driver.find_element(By.ID, "query-input")
-    q.clear(); q.send_keys(query)
-    driver.find_element(By.ID, "voice-search-btn")
-    driver.execute_script("performSearch()")
-    time.sleep(0.2)
+    q.clear()
+    q.send_keys(query)
+    # Trigger the 'input' event which calls executeSmartSearch() internally
+    driver.execute_script("""
+        var el = document.getElementById('query-input');
+        el.dispatchEvent(new Event('input', {bubbles: true}));
+    """)
+    time.sleep(0.3)
     bills_found = len(driver.find_elements(By.CSS_SELECTOR, "#bills-results-container .search-result-card"))
     docs_found  = len(driver.find_elements(By.CSS_SELECTOR, "#docs-results-container .search-result-card"))
     assert bills_found == exp_bills
