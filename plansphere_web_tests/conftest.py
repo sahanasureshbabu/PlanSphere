@@ -19,7 +19,7 @@ except ImportError:
 # List to gather all test execution results
 test_results = []
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def driver():
     """Session-scoped headless Chrome WebDriver for Desktop E2E tests."""
     options = SeleniumOptions()
@@ -36,7 +36,7 @@ def driver():
     
     driver.quit()
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def appium_driver():
     """Session-scoped Appium mobile emulation driver."""
     options_loaded = False
@@ -136,6 +136,16 @@ def pytest_runtest_makereport(item, call):
         if "appium" in test_name or "appium" in item.nodeid:
             framework = "Appium (Mobile Web)"
             
+        # Determine report category based on filename/nodeid
+        category = "Functional"
+        nodeid_lower = item.nodeid.lower()
+        if "test_security.py" in nodeid_lower:
+            category = "Security"
+        elif "test_vulnerability.py" in nodeid_lower:
+            category = "Vulnerability"
+        elif "test_load.py" in nodeid_lower:
+            category = "Load"
+
         test_results.append({
             "name": test_name,
             "framework": framework,
@@ -143,14 +153,13 @@ def pytest_runtest_makereport(item, call):
             "description": description,
             "status": status,
             "duration": duration,
-            "error": error_msg
+            "error": error_msg,
+            "category": category
         })
 
-def pytest_sessionfinish(session, exitstatus):
-    """Executes at the end of the test run to write the openpyxl Excel report."""
-    workspace_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    report_path = os.path.join(workspace_dir, "selenium_test_report.xlsx")
-    
+def _write_excel_report(report_path, title_text, results):
+    if not results:
+        return
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "E2E Execution Report"
@@ -185,20 +194,20 @@ def pytest_sessionfinish(session, exitstatus):
         bottom=Side(style='thin', color='E5E7EB')
     )
     
-    # Title Banner (merged A1:H2 to accommodate framework column)
+    # Title Banner (merged A1:H2)
     ws.merge_cells("A1:H2")
-    ws["A1"] = "PlanSphere E2E Automation Testing Report (Selenium & Appium)"
+    ws["A1"] = title_text
     ws["A1"].font = title_font
     ws["A1"].fill = navy_fill
     ws["A1"].alignment = Alignment(horizontal="left", vertical="center", indent=1)
     
     # Setup Metrics
-    total = len(test_results)
-    passed = sum(1 for r in test_results if r["status"] == "PASSED")
-    failed = sum(1 for r in test_results if r["status"] == "FAILED")
-    skipped = sum(1 for r in test_results if r["status"] == "SKIPPED")
+    total = len(results)
+    passed = sum(1 for r in results if r["status"] == "PASSED")
+    failed = sum(1 for r in results if r["status"] == "FAILED")
+    skipped = sum(1 for r in results if r["status"] == "SKIPPED")
     pass_rate = (passed / total * 100) if total > 0 else 0
-    total_duration = sum(r["duration"] for r in test_results)
+    total_duration = sum(r["duration"] for r in results)
     
     ws["A4"] = "Run Date:"
     ws["B4"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -244,7 +253,7 @@ def pytest_sessionfinish(session, exitstatus):
         
     # Write Test Results
     current_row = 8
-    for idx, res in enumerate(test_results, 1):
+    for idx, res in enumerate(results, 1):
         ws.row_dimensions[current_row].height = 22
         
         ws.cell(row=current_row, column=1, value=idx).alignment = center_align
@@ -295,4 +304,32 @@ def pytest_sessionfinish(session, exitstatus):
         ws.column_dimensions[col_letter].width = width
         
     wb.save(report_path)
-    print(f"\nCombined Excel Report Saved successfully: {report_path}")
+    print(f"Excel Report Saved successfully: {report_path}")
+
+def pytest_sessionfinish(session, exitstatus):
+    """Executes at the end of the test run to write the openpyxl Excel reports."""
+    workspace_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    
+    # 1. Combined Report
+    combined_report_path = os.path.join(workspace_dir, "selenium_test_report.xlsx")
+    _write_excel_report(combined_report_path, "PlanSphere E2E Automation Testing Report (Selenium & Appium)", test_results)
+    
+    # 2. Functional Report
+    functional_results = [r for r in test_results if r.get("category") == "Functional"]
+    functional_report_path = os.path.join(workspace_dir, "functional_test_report.xlsx")
+    _write_excel_report(functional_report_path, "PlanSphere E2E Functional Testing Report (Selenium & Appium)", functional_results)
+    
+    # 3. Security Report
+    security_results = [r for r in test_results if r.get("category") == "Security"]
+    security_report_path = os.path.join(workspace_dir, "security_test_report.xlsx")
+    _write_excel_report(security_report_path, "PlanSphere Static Security & Prevention Analysis Report", security_results)
+    
+    # 4. Vulnerability Report
+    vulnerability_results = [r for r in test_results if r.get("category") == "Vulnerability"]
+    vulnerability_report_path = os.path.join(workspace_dir, "vulnerability_test_report.xlsx")
+    _write_excel_report(vulnerability_report_path, "PlanSphere Dependency & Secrets Vulnerability Scan Report", vulnerability_results)
+    
+    # 5. Load Report
+    load_results = [r for r in test_results if r.get("category") == "Load"]
+    load_report_path = os.path.join(workspace_dir, "load_test_report.xlsx")
+    _write_excel_report(load_report_path, "PlanSphere Load & Performance Stress Test Report", load_results)

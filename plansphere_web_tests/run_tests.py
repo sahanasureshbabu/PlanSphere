@@ -71,10 +71,12 @@ if __name__ == "__main__":
     
     # Run pytest
     print("Launching Pytest test suite execution (Selenium & Appium)...")
-    pytest_command = [sys.executable, "-m", "pytest", "-v", tests_dir]
-    
     if len(sys.argv) > 1:
-        pytest_command.extend(sys.argv[1:])
+        # If arguments are passed, use them as the test targets
+        pytest_command = [sys.executable, "-m", "pytest", "-v"] + sys.argv[1:]
+    else:
+        # Default: run all tests in the directory
+        pytest_command = [sys.executable, "-m", "pytest", "-v", tests_dir]
         
     result = subprocess.run(pytest_command)
     

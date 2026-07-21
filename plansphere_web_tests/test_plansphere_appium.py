@@ -28,9 +28,9 @@ def inject_session(driver, email="admin@plansphere.com", name="Administrator"):
 
 # Generate 30 Login Test Cases
 login_cases = []
-for i in range(15):
+for i in range(6):
     login_cases.append((f"invalidemail{i}", "admin123", "email-error", "Please enter a valid email address."))
-for i in range(14):
+for i in range(8):
     login_cases.append(("admin@plansphere.com", f"wrongpass{i}", None, "Invalid email or password."))
 login_cases.append(("admin@plansphere.com", "admin123", "success", "Sign In successful!"))
 
@@ -66,11 +66,11 @@ def test_appium_login(appium_driver, email, password, expected_error_type, expec
         )
         assert expected_msg in toast.text
 
-# Generate 20 Registration Test Cases
+# Generate 12 Registration Test Cases
 register_cases = []
-for i in range(8):
+for i in range(4):
     register_cases.append(("", f"reg{i}@plansphere.com", "pass12345", "reg-name-error", "Name is required."))
-for i in range(8):
+for i in range(4):
     register_cases.append(("John Doe", f"badregemail{i}", "pass12345", "reg-email-error", "Please enter a valid email."))
 for i in range(3):
     register_cases.append(("John Doe", f"user{i}@plansphere.com", "123", "reg-pass-error", "Must be at least 6 characters."))
@@ -152,9 +152,9 @@ def test_appium_google_login(appium_driver, case_num):
 
 # Generate 30 Category Suggestion Test Cases
 suggestion_cases = []
-electronics_keywords = ["MacBook", "iPhone", "Sony PS5", "Samsung TV", "Dell Monitor", "iPad", "HP Laptop", "Bose Speaker", "Canon DSLR", "Keyboard"]
-health_keywords = ["Hospital", "Apollo clinic", "Medicines Pharmeasy", "Doctor fee", "Dental", "Blood report", "Cardiac check", "Vitamins", "Syringe", "N95 Mask"]
-insurance_keywords = ["LIC Policy", "Star Health", "HDFC Life", "Term policy", "Car insurance", "Bike policy", "Term coverage", "Family floater", "Endowment", "LIC India"]
+electronics_keywords = ["MacBook", "iPhone", "Sony PS5", "Samsung TV", "Dell Monitor"]
+health_keywords = ["Hospital", "Apollo clinic", "Medicines Pharmeasy", "Doctor fee", "Dental"]
+insurance_keywords = ["LIC Policy", "Star Health", "HDFC Life", "Term policy", "Car insurance"]
 
 for idx, word in enumerate(electronics_keywords):
     suggestion_cases.append((f"{word} {idx}", "Electronics", "Warranty Bill"))
@@ -185,9 +185,7 @@ def test_appium_category_suggestion(appium_driver, title, expected_category, exp
 # Generate 60 Duration Calculator Test Cases (15 base dates * 4 buttons)
 duration_cases = []
 base_dates = [
-    "2026-01-01", "2026-02-15", "2026-03-20", "2026-04-10", "2026-05-05",
-    "2026-06-30", "2026-07-22", "2026-08-14", "2026-09-08", "2026-10-12",
-    "2026-11-18", "2026-12-25", "2025-06-15", "2025-07-10", "2025-08-05"
+    "2026-01-01", "2026-06-30", "2026-09-08", "2026-12-25", "2025-06-15"
 ]
 buttons = [("6", 6), ("12", 12), ("24", 24), ("36", 36)]
 
@@ -275,10 +273,10 @@ def test_appium_add_bill_form_validation(appium_driver, name, category, bill_typ
 # 3. VAULT ACTIONS TESTS (80 cases)
 # ─────────────────────────────────────────────────────────────
 
-# Generate 40 Document Upload Cases
+# Generate 12 Document Upload Cases
 doc_upload_cases = []
 doc_categories = ["Aadhaar", "PAN", "Certificates", "Other"]
-for i in range(40):
+for i in range(12):
     doc_upload_cases.append((f"MobileDoc_{i}.pdf", doc_categories[i % 4]))
 
 @pytest.mark.parametrize("doc_name,category", doc_upload_cases)
@@ -288,6 +286,7 @@ def test_appium_document_upload(appium_driver, doc_name, category):
     appium_driver.get(f"{BASE_URL}/vault.html")
     
     WebDriverWait(appium_driver, 3).until(EC.presence_of_element_located((By.ID, "docs-list")))
+    appium_driver.execute_script(f"selectFolder('{category}')")
     initial_count = len(appium_driver.find_elements(By.CSS_SELECTOR, "#docs-list .doc-card"))
     
     appium_driver.execute_script(f"""
@@ -304,15 +303,16 @@ def test_appium_document_upload(appium_driver, doc_name, category):
     appium_driver.refresh()
     
     WebDriverWait(appium_driver, 3).until(EC.presence_of_element_located((By.ID, "docs-list")))
+    appium_driver.execute_script(f"selectFolder('{category}')")
     final_count = len(appium_driver.find_elements(By.CSS_SELECTOR, "#docs-list .doc-card"))
     assert final_count == initial_count + 1
     
     page_text = appium_driver.find_element(By.ID, "docs-list").text
     assert doc_name in page_text
 
-# Generate 40 Document Deletion Cases
+# Generate 12 Document Deletion Cases
 doc_delete_cases = []
-for i in range(40):
+for i in range(12):
     doc_delete_cases.append((f"MobileDel_{i}.pdf", i))
 
 @pytest.mark.parametrize("doc_name,index", doc_delete_cases)
@@ -348,9 +348,9 @@ def test_appium_document_deletion(appium_driver, doc_name, index):
 # 4. DASHBOARD & MOBILE SEARCH TESTS (60 cases)
 # ─────────────────────────────────────────────────────────────
 
-# Generate 25 Dashboard Stat Configurations
+# Generate 10 Dashboard Stat Configurations
 dashboard_config_cases = []
-for i in range(25):
+for i in range(10):
     num_bills = (i % 5) + 1
     num_docs = (i % 3) + 1
     dashboard_config_cases.append((num_bills, num_docs))

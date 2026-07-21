@@ -138,7 +138,7 @@
                         <input type="text" id="vault-search" class="form-control" placeholder="Search files..." style="width: 160px; padding: 6px 12px 6px 36px; font-size:12px;">
                     </div>
                     
-                    <div style="overflow-x: auto; width: 100%;">
+                    <div id="docs-list" style="overflow-x: auto; width: 100%;">
                         <table class="vault-table">
                             <thead>
                                 <tr>
@@ -379,7 +379,7 @@
             body.innerHTML = filtered.map(d => {
                 const date = new Date(d.uploadDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
                 return `
-                    <tr>
+                    <tr class="doc-card">
                         <td style="font-weight:600;">${d.name}</td>
                         <td>${date}</td>
                         <td>${d.fileSize}</td>
@@ -405,12 +405,28 @@
             const docs = getDocuments();
             const match = docs.find(d => d.id === id);
             if (match && match.image) {
-                // Open base64 content in new tab
+                // Open base64 content in new tab securely
                 const win = window.open();
-                if (match.fileType === 'pdf') {
-                    win.document.write(`<iframe src="${match.image}" style="width:100%; height:100vh; border:none;"></iframe>`);
-                } else {
-                    win.document.write(`<img src="${match.image}" style="max-width:100%; height:auto; display:block; margin:20px auto; border-radius:10px;">`);
+                if (win) {
+                    win.document.title = match.name;
+                    if (match.fileType === 'pdf') {
+                        const iframe = win.document.createElement('iframe');
+                        iframe.src = match.image;
+                        iframe.style.width = '100%';
+                        iframe.style.height = '100vh';
+                        iframe.style.border = 'none';
+                        win.document.body.style.margin = '0';
+                        win.document.body.appendChild(iframe);
+                    } else {
+                        const img = win.document.createElement('img');
+                        img.src = match.image;
+                        img.style.maxWidth = '100%';
+                        img.style.height = 'auto';
+                        img.style.display = 'block';
+                        img.style.margin = '20px auto';
+                        img.style.borderRadius = '10px';
+                        win.document.body.appendChild(img);
+                    }
                 }
             } else {
                 showToast('Unable to render copy preview.', 'error');

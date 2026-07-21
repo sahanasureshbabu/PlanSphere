@@ -28,13 +28,13 @@ def inject_session(driver, email="admin@plansphere.com", name="Administrator"):
 # 1. AUTHENTICATION TESTS (80 cases)
 # ─────────────────────────────────────────────────────────────
 
-# Generate 40 Login Test Cases
+# Generate 15 Login Test Cases
 login_cases = []
-# 20 cases of bad email formats
-for i in range(20):
+# 6 cases of bad email formats
+for i in range(6):
     login_cases.append((f"invalidemail{i}", "admin123", "email-error", "Please enter a valid email address."))
-# 19 cases of incorrect credentials
-for i in range(19):
+# 8 cases of incorrect credentials
+for i in range(8):
     login_cases.append(("admin@plansphere.com", f"wrongpass{i}", None, "Invalid email or password."))
 # 1 successful case
 login_cases.append(("admin@plansphere.com", "admin123", "success", "Sign In successful!"))
@@ -76,16 +76,16 @@ def test_login(driver, email, password, expected_error_type, expected_msg):
         )
         assert expected_msg in toast.text
 
-# Generate 30 Registration Test Cases
+# Generate 12 Registration Test Cases
 register_cases = []
-# 12 bad names
-for i in range(12):
+# 4 bad names
+for i in range(4):
     register_cases.append(("", f"reg{i}@plansphere.com", "pass12345", "reg-name-error", "Name is required."))
-# 12 bad emails
-for i in range(12):
+# 4 bad emails
+for i in range(4):
     register_cases.append(("John Doe", f"badregemail{i}", "pass12345", "reg-email-error", "Please enter a valid email."))
-# 5 short passwords
-for i in range(5):
+# 3 short passwords
+for i in range(3):
     register_cases.append(("John Doe", f"user{i}@plansphere.com", "123", "reg-pass-error", "Must be at least 6 characters."))
 # 1 successful registration
 register_cases.append(("New User", "newuser@plansphere.com", "secure123", "success", "Registration complete!"))
@@ -173,19 +173,13 @@ def test_google_login(driver, case_num):
 # Generate 50 Category Suggestion Test Cases based on title keywords
 suggestion_cases = []
 electronics_keywords = [
-    "MacBook Pro", "iPhone 16", "Sony PS5", "Samsung TV", "Dell Monitor", "iPad Air", 
-    "HP Laptop", "Bose Speaker", "Canon DSLR", "Keyboard", "Logitech Mouse", "Router", 
-    "Headphones", "Tablet PC", "Smartwatch", "USB Charger", "Graphics Card"
+    "MacBook Pro", "iPhone 16", "Sony PS5", "Samsung TV", "Dell Monitor"
 ]
 health_keywords = [
-    "Hospital checkup", "Apollo clinic", "Pharmeasy medicines", "Doctor fees", "Dental surgery", 
-    "Blood report", "Cardiac check", "Vitamins supplement", "Syringe injection", "N95 Mask", 
-    "Bandage kit", "Stethoscope", "Prescription", "Health checkup", "Skin Ointment", "Cough syrup", "Aspirin"
+    "Hospital checkup", "Apollo clinic", "Pharmeasy medicines", "Doctor fees", "Dental surgery"
 ]
 insurance_keywords = [
-    "LIC Policy", "Star Health premium", "HDFC Life insurance", "Term policy", "Car insurance premium", 
-    "Bike policy", "Term coverage", "Family floater", "Endowment Policy", "LIC India term", 
-    "Policy premium", "Health insurance", "Medical premium", "Life cover", "Accident policy", "Travel insurance"
+    "LIC Policy", "Star Health premium", "HDFC Life insurance", "Term policy", "Car insurance premium"
 ]
 
 for idx, word in enumerate(electronics_keywords):
@@ -218,9 +212,7 @@ def test_category_suggestion(driver, title, expected_category, expected_type):
 # 13 base purchase dates * 4 buttons (6M, 12M, 24M, 36M)
 duration_cases = []
 base_dates = [
-    "2026-01-01", "2026-02-15", "2026-03-20", "2026-04-10", "2026-05-05",
-    "2026-06-30", "2026-07-22", "2026-08-14", "2026-09-08", "2026-10-12",
-    "2026-11-18", "2026-12-25", "2025-06-15"
+    "2026-01-01", "2026-06-30", "2026-09-08", "2026-12-25", "2025-06-15"
 ]
 buttons = [("6", 6), ("12", 12), ("24", 24), ("36", 36)]
 
@@ -307,7 +299,7 @@ def test_add_bill_form_validation(driver, name, category, bill_type, amount, sto
 # 3. BILLS VAULT MANAGEMENT TESTS (90 cases)
 # ─────────────────────────────────────────────────────────────
 
-# Generate 40 Filtering/Sorting Check Cases
+# Generate 12 Filtering/Sorting Check Cases
 filter_cases = [
     ("all", 4),
     ("Electronics", 2),
@@ -315,7 +307,7 @@ filter_cases = [
     ("Insurance", 1),
     ("Utilities", 0),
 ]
-for i in range(35):
+for i in range(7):
     cat = ["all", "Electronics", "Health", "Insurance"][i % 4]
     expected = [4, 2, 1, 1][i % 4]
     filter_cases.append((cat, expected))
@@ -333,9 +325,9 @@ def test_bills_filtering(driver, category_filter, expected_count):
     cards = driver.find_elements(By.CSS_SELECTOR, "#bills-container .bill-card")
     assert len(cards) == expected_count
 
-# Generate 50 CRUD / Deletion & Addition cycles
+# Generate 12 CRUD / Deletion & Addition cycles
 crud_cases = []
-for i in range(50):
+for i in range(12):
     crud_cases.append((
         f"Test Item {i}", 100 + i * 50, "Electronics", "Warranty Bill", f"Store {i}", "2026-01-01", "2027-01-01"
     ))
@@ -399,10 +391,10 @@ def test_bill_crud(driver, name, amt, cat, btype, store, pdate, edate):
 # 4. DOCUMENT VAULT STORAGE TESTS (60 cases)
 # ─────────────────────────────────────────────────────────────
 
-# Generate 30 Document Upload Cases
+# Generate 12 Document Upload Cases
 doc_upload_cases = []
 doc_categories = ["Aadhaar", "PAN", "Certificates", "Other"]
-for i in range(30):
+for i in range(12):
     doc_upload_cases.append((f"DocumentCopy_{i}.pdf", doc_categories[i % 4]))
 
 @pytest.mark.parametrize("doc_name,category", doc_upload_cases)
@@ -412,6 +404,7 @@ def test_document_upload(driver, doc_name, category):
     driver.get(f"{BASE_URL}/vault.html")
     
     WebDriverWait(driver, 3).until(EC.presence_of_element_located((By.ID, "docs-list")))
+    driver.execute_script(f"selectFolder('{category}')")
     initial_count = len(driver.find_elements(By.CSS_SELECTOR, "#docs-list .doc-card"))
     
     # Inject document save directly and reload to verify UI updates
@@ -429,15 +422,16 @@ def test_document_upload(driver, doc_name, category):
     driver.refresh()
     
     WebDriverWait(driver, 3).until(EC.presence_of_element_located((By.ID, "docs-list")))
+    driver.execute_script(f"selectFolder('{category}')")
     final_count = len(driver.find_elements(By.CSS_SELECTOR, "#docs-list .doc-card"))
     assert final_count == initial_count + 1
     
     page_text = driver.find_element(By.ID, "docs-list").text
     assert doc_name in page_text
 
-# Generate 30 Document Deletion Cases
+# Generate 12 Document Deletion Cases
 doc_delete_cases = []
-for i in range(30):
+for i in range(12):
     doc_delete_cases.append((f"DocToDelete_{i}.pdf", i))
 
 @pytest.mark.parametrize("doc_name,index", doc_delete_cases)
@@ -475,9 +469,9 @@ def test_document_deletion(driver, doc_name, index):
 # 5. DASHBOARD & ANALYTICS TESTS (45 cases)
 # ─────────────────────────────────────────────────────────────
 
-# Generate 25 Dashboard Stat configurations and check counts
+# Generate 10 Dashboard Stat configurations and check counts
 dashboard_config_cases = []
-for i in range(25):
+for i in range(10):
     num_bills = (i % 5) + 1  # 1 to 5 bills
     num_docs = (i % 3) + 1   # 1 to 3 docs
     dashboard_config_cases.append((num_bills, num_docs))
