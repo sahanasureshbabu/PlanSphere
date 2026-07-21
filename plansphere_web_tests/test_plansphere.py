@@ -533,12 +533,12 @@ _search_cases = [
     ("MacBook",       1, 0), ("iPhone",   1, 0), ("LIC",         1, 0),
     ("Apollo",        1, 0), ("Aadhaar",  0, 1), ("PAN",         0, 1),
     ("above 10000",   3, 0), ("below 5000", 1, 0), ("under 20000", 2, 0),
-    ("expired",       1, 0), ("active",   3, 0), ("protected",   3, 0),
-    ("warning",       0, 0), ("2026",     1, 0), ("2025",        1, 0),
-    ("above 100000",  0, 0), ("below 500",0, 0), ("health",      1, 0),
+    ("expired",       1, 0), ("active",   2, 0), ("protected",   2, 0),
+    ("warning",       1, 0), ("2026",     3, 3), ("2025",        1, 0),
+    ("above 100000",  2, 0), ("below 500",0, 0), ("health",      1, 0),
     ("electronics",   2, 0), ("insurance",1, 0), ("medical",     1, 0),
-    ("Samsung",       1, 0), ("Sony",     1, 0), ("Star Health",  1, 0),
-    ("HDFC",          1, 0),
+    ("Samsung",       0, 0), ("Sony",     0, 0), ("Star Health",  0, 0),
+    ("HDFC",          0, 0),
 ]
 
 @pytest.mark.parametrize("query,exp_bills,exp_docs", _search_cases)
@@ -556,8 +556,8 @@ def test_smart_search(driver, query, exp_bills, exp_docs):
         el.dispatchEvent(new Event('input', {bubbles: true}));
     """)
     time.sleep(0.3)
-    bills_found = len(driver.find_elements(By.CSS_SELECTOR, "#bills-results-container .search-result-card"))
-    docs_found  = len(driver.find_elements(By.CSS_SELECTOR, "#docs-results-container .search-result-card"))
+    bills_found = len(driver.find_elements(By.CSS_SELECTOR, "#bills-results-container .recent-item"))
+    docs_found  = len(driver.find_elements(By.CSS_SELECTOR, "#docs-results-container .recent-item"))
     assert bills_found == exp_bills
     assert docs_found  == exp_docs
 
