@@ -19,9 +19,9 @@ def start_server():
         def log_message(self, format, *args):
             pass
             
-    socketserver.TCPServer.allow_reuse_address = True
+    socketserver.ThreadingTCPServer.allow_reuse_address = True
     try:
-        with socketserver.TCPServer(("", PORT), SilentHTTPRequestHandler) as httpd:
+        with socketserver.ThreadingTCPServer(("", PORT), SilentHTTPRequestHandler) as httpd:
             print(f"Local Server: Started serving '{DIRECTORY}' on http://localhost:{PORT}")
             httpd.serve_forever()
     except Exception as e:
