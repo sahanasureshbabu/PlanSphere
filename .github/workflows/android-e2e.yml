@@ -1,0 +1,207 @@
+name: PlanSphere E2E Mobile Automation CI/CD
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *' # Daily at midnight
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  android-e2e-tests:
+    runs-on: macos-13 # macOS runner is required for hardware-accelerated Android Emulator in GHA
+
+    steps:
+    # Stage 1: Checkout Repository
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    # Stage 2: Setup Java
+    - name: Setup Java JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    # Stage 3: Setup Android SDK
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+
+    # Stage 4: Install Android Dependencies / Flutter SDK
+    - name: Setup Flutter SDK
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.22.x' # standard stable channel compatibility
+        channel: 'stable'
+        cache: true
+
+    # Stage 5: Build APK
+    - name: Compile and Build Debug APK
+      run: |
+        cd plansphere
+        flutter pub get
+        flutter build apk --debug
+
+    # Stage 6 & 7: Start Android Emulator and Verify Readiness
+    # Stage 8: Install APK
+    # Stage 9: Start Appium Server
+    # Stage 10: Verify Appium Health
+    # Stage 11: Execute Appium E2E Tests
+    # Stage 12 & 13: Capture Screenshots & Logs
+    # Stage 14, 15, 16, 17: Generate Reports
+    - name: Run Appium Tests on Android Emulator
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: 34
+        target: google_apis
+        arch: x86_64
+        profile: pixel_6
+        force-avd-creation: false
+        emulator-options: -no-window -gpu swiftshader_indirect -no-audio -no-boot-anim -camera-back none
+        disable-animations: true
+        script: |
+          # Verify device boot
+          adb wait-for-device
+          echo "Emulator boot verification completed."
+          
+          # Install built APK
+          adb install plansphere/build/app/outputs/flutter-apk/app-debug.apk
+          echo "PlanSphere APK installed successfully."
+          
+          # Install Node dependencies & Appium server
+          npm install -g appium@next
+          appium driver install uiautomator2
+          
+          # Setup directories for Appium logs
+          mkdir -p automation/reports/Logs
+          mkdir -p automation/reports/Screenshots
+          
+          # Launch Appium Server in background
+          appium --log automation/reports/Logs/appium.log --port 4723 &
+          
+          # Verify Appium server port is open
+          echo "Verifying Appium server health..."
+          for i in {1..10}; do
+            if nc -z localhost 4723; then
+              echo "Appium server is online."
+              break
+            fi
+            sleep 1
+          done
+          
+          # Fetch historical reports from gh-pages branch before test execution
+          git checkout origin/gh-pages -- reports/history reports/JSON/history.json || true
+          if [ -d "reports/history" ]; then
+            mkdir -p automation/reports
+            cp -r reports/history automation/reports/
+          fi
+          
+          # Run TestNG automation suite
+          cd automation
+          node scripts/generate_test_cases.js
+          chmod +x mvnw
+          ./mvnw clean test
+          
+          # Check test status (we allow build to continue if it is test failures, but block on infra error)
+          echo "Appium automation suite completed."
+
+    # Stage 18: Upload Artifacts (Retention 30 days)
+    - name: Upload Test Report Artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: plan-sphere-e2e-automation-reports
+        path: |
+          automation/reports/Excel/
+          automation/reports/HTML/
+          automation/reports/JSON/
+          automation/reports/Screenshots/
+          automation/reports/Logs/
+          automation/reports/Summary/
+        retention-days: 30
+
+    # Stage 19: Deploy and Publish Reports to GitHub Pages
+    # Stage 20: Update Historical Reports
+    - name: Deploy Reports to GitHub Pages
+      if: always()
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        
+        # Create temp folder to structure Pages deploy
+        mkdir -p deploy/reports/latest
+        mkdir -p deploy/reports/history
+        
+        # Copy latest HTML/Excel/Logs/Screenshots
+        if [ -d "automation/reports/HTML" ]; then
+          cp -r automation/reports/HTML/* deploy/reports/latest/
+          cp -r automation/reports/Excel deploy/reports/latest/
+          cp -r automation/reports/Logs deploy/reports/latest/
+          cp -r automation/reports/Screenshots deploy/reports/latest/
+          cp automation/reports/Summary/summary.md deploy/reports/latest/ || true
+        fi
+        
+        # Archive history build
+        mkdir -p deploy/reports/history/build-${{ github.run_number }}
+        if [ -d "automation/reports/HTML" ]; then
+          cp -r automation/reports/HTML/* deploy/reports/history/build-${{ github.run_number }}/
+          cp -r automation/reports/Excel deploy/reports/history/build-${{ github.run_number }}/
+          cp -r automation/reports/Logs deploy/reports/history/build-${{ github.run_number }}/
+          cp -r automation/reports/Screenshots deploy/reports/history/build-${{ github.run_number }}/
+        fi
+        
+        # Copy older history back
+        if [ -d "automation/reports/history" ]; then
+          cp -r automation/reports/history/* deploy/reports/history/ || true
+        fi
+        
+        # Checkout gh-pages branch to push reports
+        # If gh-pages branch doesn't exist, create it
+        git checkout --orphan gh-pages || git checkout -b gh-pages
+        git rm -rf .
+        
+        # Copy deploy contents back to root
+        cp -r deploy/* .
+        rm -rf deploy
+        
+        # Commit and push back to gh-pages branch
+        git add .
+        git commit -m "Deploy E2E reports for build ${{ github.run_number }} [skip ci]" || echo "No changes to commit"
+        git push origin gh-pages --force
+
+    # Stage 21: Publish GitHub Action Summary
+    - name: Publish Action Summary
+      if: always()
+      run: |
+        if [ -f "automation/reports/Summary/summary.md" ]; then
+          cat automation/reports/Summary/summary.md >> $GITHUB_STEP_SUMMARY
+        else
+          echo "# E2E Test Suite Run Failed to Compile/Execute" >> $GITHUB_STEP_SUMMARY
+        fi
+
+    # Failure Criteria Enforcement: fail build if pass percentage is less than 95%
+    - name: Enforce Pass Rate Threshold
+      run: |
+        # Parse JSON results to check success rates
+        if [ -f "automation/reports/JSON/execution-results.json" ]; then
+          TOTAL=$(jq '. | length' automation/reports/JSON/execution-results.json)
+          PASSED=$(jq '[.[] | select(.status == "PASSED")] | length' automation/reports/JSON/execution-results.json)
+          RATE=$(( 100 * PASSED / TOTAL ))
+          echo "Pass rate calculated: $RATE%"
+          if [ $RATE -lt 95 ]; then
+            echo "Error: Pass rate $RATE% is below the required 95% threshold. Failing build."
+            exit 1
+          fi
+        else
+          echo "Error: Execution results file not found. Failing build."
+          exit 1
+        fi

@@ -1,0 +1,32 @@
+#!/bin/sh
+
+MVN_VERSION="3.9.6"
+SCRIPT_DIR=$(dirname "$0")
+MVN_DIR="$SCRIPT_DIR/.maven"
+MVN_HOME="$MVN_DIR/apache-maven-$MVN_VERSION"
+MVN_ZIP="$MVN_DIR/maven.zip"
+MVN_URL="https://archive.apache.org/dist/maven/maven-3/$MVN_VERSION/binaries/apache-maven-$MVN_VERSION-bin.zip"
+
+if [ ! -d "$MVN_DIR" ]; then
+    mkdir -p "$MVN_DIR"
+fi
+
+if [ ! -f "$MVN_HOME/bin/mvn" ]; then
+    echo "Maven wrapper: Maven not found. Downloading Maven $MVN_VERSION..."
+    if command -v curl >/dev/null 2>&1; then
+        curl -sL "$MVN_URL" -o "$MVN_ZIP"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -q "$MVN_URL" -O "$MVN_ZIP"
+    else
+        echo "Error: Neither curl nor wget found. Cannot download Maven."
+        exit 1
+    fi
+
+    echo "Maven wrapper: Extracting Maven..."
+    unzip -q "$MVN_ZIP" -d "$MVN_DIR"
+    rm "$MVN_ZIP"
+    chmod +x "$MVN_HOME/bin/mvn"
+    echo "Maven wrapper: Bootstrap complete."
+fi
+
+exec "$MVN_HOME/bin/mvn" "$@"
