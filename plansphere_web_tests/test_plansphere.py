@@ -555,7 +555,7 @@ def test_smart_search(driver, query, exp_bills, exp_docs):
         var el = document.getElementById('query-input');
         el.dispatchEvent(new Event('input', {bubbles: true}));
     """)
-    time.sleep(0.3)
+    time.sleep(0.5)
     bills_found = len(driver.find_elements(By.CSS_SELECTOR, "#bills-results-container .recent-item"))
     docs_found  = len(driver.find_elements(By.CSS_SELECTOR, "#docs-results-container .recent-item"))
     assert bills_found == exp_bills
