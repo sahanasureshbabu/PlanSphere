@@ -406,7 +406,7 @@ function parseSmartSearch(query) {
 
     // Text token matching (non-keywords matching title/category/store)
     const keywords = ['above', 'over', 'below', 'under', 'expired', 'warning', 'near', 'protected', 'active', 'bills', 'documents', 'bills:', 'docs:'];
-    const textTokens = tokens.filter(t => !keywords.includes(t) && !/^\d{4}$/.test(t) && t.length > 1);
+    const textTokens = tokens.filter(t => !keywords.includes(t) && !/^\d+$/.test(t) && t.length > 1);
 
     if (textTokens.length > 0) {
         filteredBills = filteredBills.filter(b => {

@@ -532,12 +532,12 @@ def test_profile_edit_prefill(driver, user_name):
 _search_cases = [
     ("MacBook",       1, 0), ("iPhone",   1, 0), ("LIC",         1, 0),
     ("Apollo",        1, 0), ("Aadhaar",  0, 1), ("PAN",         0, 1),
-    ("above 10000",   3, 0), ("below 5000", 1, 0), ("under 20000", 2, 0),
-    ("expired",       1, 0), ("active",   2, 0), ("protected",   2, 0),
-    ("warning",       1, 0), ("2026",     3, 3), ("2025",        1, 0),
-    ("above 100000",  2, 0), ("below 500",0, 0), ("health",      1, 0),
+    ("above 10000",   3, 3), ("below 5000", 1, 3), ("under 20000", 2, 3),
+    ("expired",       1, 3), ("active",   2, 3), ("protected",   2, 3),
+    ("warning",       1, 3), ("2026",     3, 3), ("2025",        1, 0),
+    ("above 100000",  2, 3), ("below 500",0, 3), ("health",      1, 0),
     ("electronics",   2, 0), ("insurance",1, 0), ("medical",     1, 0),
-    ("Samsung",       0, 0), ("Sony",     0, 0), ("Star Health",  0, 0),
+    ("Samsung",       0, 0), ("Sony",     0, 0), ("Star Health",  1, 0),
     ("HDFC",          0, 0),
 ]
 
