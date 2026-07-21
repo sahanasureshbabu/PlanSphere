@@ -174,7 +174,8 @@ def test_appium_warranty_duration(appium_driver, purchase_date, btn_months, expe
     WebDriverWait(appium_driver, 5).until(EC.presence_of_element_located((By.ID, "purchase-date")))
     p = appium_driver.find_element(By.ID, "purchase-date")
     appium_driver.execute_script("arguments[0].value=arguments[1]; arguments[0].dispatchEvent(new Event('input'));", p, purchase_date)
-    appium_driver.find_element(By.CSS_SELECTOR, f"button[data-months='{btn_months}']").click()
+    btn = appium_driver.find_element(By.CSS_SELECTOR, f"button[data-months='{btn_months}']")
+    appium_driver.execute_script("arguments[0].click();", btn)
     assert appium_driver.find_element(By.ID, "expiry-date").get_attribute("value") == expected_expiry
 
 # 2c. Form Validation – 10 cases
@@ -211,7 +212,8 @@ def test_appium_add_bill_form_validation(appium_driver, name, cat, btype, amount
     e_in = appium_driver.find_element(By.ID, "expiry-date")
     appium_driver.execute_script("arguments[0].value=arguments[1]; arguments[0].dispatchEvent(new Event('input'));", p_in, pdate)
     appium_driver.execute_script("arguments[0].value=arguments[1]; arguments[0].dispatchEvent(new Event('input'));", e_in, edate)
-    appium_driver.find_element(By.CSS_SELECTOR, "#bill-form button[type='submit']").click()
+    submit_btn = appium_driver.find_element(By.CSS_SELECTOR, "#bill-form button[type='submit']")
+    appium_driver.execute_script("arguments[0].click();", submit_btn)
     err = WebDriverWait(appium_driver, 5).until(EC.visibility_of_element_located((By.ID, err_id)))
     assert err.is_displayed()
 
@@ -233,7 +235,8 @@ def test_appium_add_bill_success(appium_driver, name, amt, cat, btype, store, pd
     e_in = appium_driver.find_element(By.ID, "expiry-date")
     appium_driver.execute_script("arguments[0].value=arguments[1]; arguments[0].dispatchEvent(new Event('input'));", p_in, pdate)
     appium_driver.execute_script("arguments[0].value=arguments[1]; arguments[0].dispatchEvent(new Event('input'));", e_in, edate)
-    appium_driver.find_element(By.CSS_SELECTOR, "#bill-form button[type='submit']").click()
+    submit_btn = appium_driver.find_element(By.CSS_SELECTOR, "#bill-form button[type='submit']")
+    appium_driver.execute_script("arguments[0].click();", submit_btn)
     WebDriverWait(appium_driver, 5).until(EC.url_contains("bills.html"))
     assert "bills.html" in appium_driver.current_url
 
