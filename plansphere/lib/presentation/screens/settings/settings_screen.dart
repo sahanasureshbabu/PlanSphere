@@ -248,7 +248,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             icon: Icons.lock_reset_rounded,
             title: 'Change Password',
             subtitle: 'Update your account password',
-            onTap: () => context.push('/auth/forgot-password'),
+            onTap: _showChangePasswordDialog,
           ),
 
           // Notifications
@@ -404,6 +404,179 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 )),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showChangePasswordDialog() {
+    final passwordController = TextEditingController();
+    final confirmController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool loading = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: const [
+              Icon(Icons.lock_reset_rounded, color: AppColors.primary, size: 28),
+              SizedBox(width: 10),
+              Text('Change Password'),
+            ],
+          ),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Enter a new password for your PlanSphere account. Make sure it is at least 6 characters.',
+                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: passwordController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'New Password',
+                      prefixIcon: Icon(Icons.lock_outline),
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Please enter a password';
+                      if (v.length < 6) return 'Password must be at least 6 characters';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: confirmController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Confirm New Password',
+                      prefixIcon: Icon(Icons.lock_outline),
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Please confirm your password';
+                      if (v != passwordController.text) return 'Passwords do not match';
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: loading ? null : () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: loading
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+                      setDialogState(() => loading = true);
+
+                      try {
+                        final user = FirebaseAuth.instance.currentUser;
+                        if (user != null) {
+                          await user.updatePassword(passwordController.text.trim());
+                          if (context.mounted) {
+                            Navigator.pop(ctx);
+                            AppSnackbar.showSuccess(context, 'Password updated successfully!');
+                          }
+                        } else {
+                          if (context.mounted) {
+                            Navigator.pop(ctx);
+                            AppSnackbar.showError(context, 'No user logged in.');
+                          }
+                        }
+                      } on FirebaseAuthException catch (e) {
+                        setDialogState(() => loading = false);
+                        if (e.code == 'requires-recent-login') {
+                          Navigator.pop(ctx);
+                          _showReauthOrResetDialog();
+                        } else {
+                          AppSnackbar.showError(context, e.message ?? 'An error occurred.');
+                        }
+                      } catch (e) {
+                        setDialogState(() => loading = false);
+                        AppSnackbar.showError(context, 'An unexpected error occurred.');
+                      }
+                    },
+              child: loading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Update'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showReauthOrResetDialog() {
+    final user = FirebaseAuth.instance.currentUser;
+    final email = user?.email ?? '';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: const [
+            Icon(Icons.security_rounded, color: Colors.orange, size: 28),
+            SizedBox(width: 10),
+            Text('Security Verification'),
+          ],
+        ),
+        content: Text(
+          'For security reasons, changing your password directly requires a recent login. '
+          'We can send a secure reset link to your email ($email) instead, or you can log out and log back in to retry.',
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                if (email.isNotEmpty) {
+                  await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+                  if (context.mounted) {
+                    AppSnackbar.showSuccess(context, 'Password reset link sent to $email!');
+                  }
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  AppSnackbar.showError(context, 'Failed to send password reset email.');
+                }
+              }
+            },
+            child: const Text('Send Reset Link'),
+          ),
+        ],
       ),
     );
   }
