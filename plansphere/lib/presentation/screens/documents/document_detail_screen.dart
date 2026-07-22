@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,7 +9,7 @@ import 'package:intl/intl.dart';
 
 import 'package:plansphere/core/constants/app_colors.dart';
 import 'package:plansphere/presentation/providers/document_provider.dart';
-
+import 'package:plansphere/core/utils/file_saver_helper.dart';
 import 'package:plansphere/core/utils/responsive_layout.dart';
 
 class DocumentDetailScreen extends ConsumerWidget {
@@ -84,13 +86,7 @@ class DocumentDetailScreen extends ConsumerWidget {
                               decoration: BoxDecoration(
                                 color: AppColors.primary.withOpacity(0.1),
                               ),
-                              child: Icon(
-                                doc.fileType == 'pdf'
-                                    ? Icons.picture_as_pdf_rounded
-                                    : Icons.image_rounded,
-                                size: 96,
-                                color: AppColors.primary,
-                              ),
+                              child: _buildPreview(context, doc, isWide: true),
                             ),
                             Padding(
                               padding: const EdgeInsets.all(16),
@@ -105,12 +101,7 @@ class DocumentDetailScreen extends ConsumerWidget {
                                   SizedBox(
                                     width: double.infinity,
                                     child: ElevatedButton.icon(
-                                      onPressed: () async {
-                                        if (doc.fileUrl != null) {
-                                          await launchUrl(Uri.parse(doc.fileUrl!),
-                                              mode: LaunchMode.externalApplication);
-                                        }
-                                      },
+                                      onPressed: () => _downloadDocument(context, doc),
                                       icon: const Icon(Icons.download_rounded),
                                       label: const Text('Download Document'),
                                     ),
@@ -225,12 +216,9 @@ class DocumentDetailScreen extends ConsumerWidget {
                     color: AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Icon(
-                    doc.fileType == 'pdf'
-                      ? Icons.picture_as_pdf_rounded
-                      : Icons.image_rounded,
-                    size: 72,
-                    color: AppColors.primary,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: _buildPreview(context, doc, isWide: false),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -274,12 +262,7 @@ class DocumentDetailScreen extends ConsumerWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () async {
-                      if (doc.fileUrl != null) {
-                        await launchUrl(Uri.parse(doc.fileUrl!),
-                            mode: LaunchMode.externalApplication);
-                      }
-                    },
+                    onPressed: () => _downloadDocument(context, doc),
                     icon: const Icon(Icons.download_rounded),
                     label: const Text('Download Document'),
                   ),
@@ -337,7 +320,86 @@ class DocumentDetailScreen extends ConsumerWidget {
           ),
         ),
       ),
+  }
+
+  Widget _buildPreview(BuildContext context, DocumentModel doc, {required bool isWide}) {
+    final url = doc.fileUrl ?? '';
+    final isPdf = doc.fileType == 'pdf';
+
+    if (url.startsWith('data:image/')) {
+      try {
+        final base64String = url.split(',').last;
+        final bytes = base64Decode(base64String);
+        return Image.memory(
+          bytes,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => Icon(
+            Icons.broken_image_rounded,
+            size: isWide ? 96 : 72,
+            color: AppColors.primary,
+          ),
+        );
+      } catch (e) {
+        return Icon(
+          Icons.image_rounded,
+          size: isWide ? 96 : 72,
+          color: AppColors.primary,
+        );
+      }
+    } else if (url.startsWith('http') && !isPdf) {
+      return Image.network(
+        url,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => Icon(
+          Icons.broken_image_rounded,
+          size: isWide ? 96 : 72,
+          color: AppColors.primary,
+        ),
+      );
+    }
+
+    return Icon(
+      isPdf ? Icons.picture_as_pdf_rounded : Icons.image_rounded,
+      size: isWide ? 96 : 72,
+      color: AppColors.primary,
     );
+  }
+
+  Future<void> _downloadDocument(BuildContext context, DocumentModel doc) async {
+    final url = doc.fileUrl;
+    if (url == null || url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No file available to download')),
+      );
+      return;
+    }
+
+    if (url.startsWith('data:')) {
+      try {
+        final parts = url.split(',');
+        final base64String = parts.last;
+        final bytes = base64Decode(base64String);
+        
+        String ext = doc.fileType ?? 'bin';
+        final mimeType = url.substring(5, url.indexOf(';'));
+        final fileName = '${doc.title.replaceAll(RegExp(r"[^\w\-_]"), "_")}.$ext';
+
+        await FileSaverHelper.saveFile(
+          bytes: bytes,
+          fileName: fileName,
+          mimeType: mimeType,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Download started for $fileName')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to download: $e')),
+        );
+      }
+    } else {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    }
   }
 }
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -96,10 +97,30 @@ class DocumentService {
         }
         fileUrl = await ref.getDownloadURL().timeout(timeoutDuration);
       } catch (storageError) {
-        debugPrint('Firebase Storage upload failed: $storageError. Falling back to placeholder url.');
-        fileUrl = ext == 'pdf' 
-            ? 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf-test.pdf'
-            : 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000';
+        debugPrint('Firebase Storage upload failed: $storageError. Falling back to Base64 data URL.');
+        try {
+          Uint8List bytes;
+          if (fileBytes != null) {
+            bytes = fileBytes;
+          } else if (file is PlatformFile && file.bytes != null) {
+            bytes = file.bytes!;
+          } else if (file is XFile) {
+            bytes = await file.readAsBytes();
+          } else if (file is File) {
+            bytes = await file.readAsBytes();
+          } else if (file is PlatformFile && file.path != null) {
+            bytes = await File(file.path!).readAsBytes();
+          } else {
+            throw ArgumentError('Bytes not retrievable');
+          }
+          final base64String = base64Encode(bytes);
+          fileUrl = 'data:${ext == 'pdf' ? 'application/pdf' : 'image/$ext'};base64,$base64String';
+        } catch (e) {
+          debugPrint('Error generating base64 fallback: $e');
+          fileUrl = ext == 'pdf' 
+              ? 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf-test.pdf'
+              : 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000';
+        }
       }
 
       final docWithUrl = DocumentModel(
