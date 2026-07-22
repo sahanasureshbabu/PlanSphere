@@ -167,12 +167,16 @@
                     <div class="form-group" style="margin-bottom:12px;">
                         <label for="doc-upload-folder">Target Folder *</label>
                         <select id="doc-upload-folder" class="form-control form-select" style="padding: 10px 14px;">
-                            <option value="Aadhaar">Aadhaar</option>
-                            <option value="PAN">PAN</option>
-                            <option value="Passport">Passport</option>
-                            <option value="Insurance">Insurance</option>
-                            <option value="Certificates">Certificates</option>
-                            <option value="Education">Education</option>
+                            <option value="Receipts">Receipts</option>
+                            <option value="Warranties">Warranties</option>
+                            <option value="Others">Others</option>
+                            <option value="Aadhaar" style="display:none;">Aadhaar</option>
+                            <option value="PAN" style="display:none;">PAN</option>
+                            <option value="Passport" style="display:none;">Passport</option>
+                            <option value="Insurance" style="display:none;">Insurance</option>
+                            <option value="Certificates" style="display:none;">Certificates</option>
+                            <option value="Education" style="display:none;">Education</option>
+                            <option value="Other" style="display:none;">Other</option>
                         </select>
                     </div>
 
@@ -226,8 +230,8 @@
     <!-- Core Javascript Scripts -->
     <script src="app.js"></script>
     <script>
-        const categories = ["Aadhaar", "PAN", "Passport", "Insurance", "Certificates", "Education"];
-        let activeFolder = "Aadhaar";
+        const categories = ["Aadhaar", "PAN", "Passport", "Insurance", "Certificates", "Education", "Other", "Receipts", "Warranties", "Others"];
+        let activeFolder = "Receipts";
         let uploadedBase64 = '';
         let uploadedType = 'pdf';
         let uploadedSize = '0 KB';
@@ -330,7 +334,12 @@
             const grid = document.getElementById('folder-grid');
             const docs = getDocuments();
 
-            grid.innerHTML = categories.map(cat => {
+            const foldersToRender = ["Receipts", "Warranties", "Others"];
+            if (activeFolder && !foldersToRender.includes(activeFolder)) {
+                foldersToRender.push(activeFolder);
+            }
+
+            grid.innerHTML = foldersToRender.map(cat => {
                 const count = docs.filter(d => d.category === cat).length;
                 const isActive = cat === activeFolder ? 'active' : '';
                 return `

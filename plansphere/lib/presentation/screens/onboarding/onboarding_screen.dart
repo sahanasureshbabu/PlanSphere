@@ -37,7 +37,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       icon: Icons.folder_special_rounded,
       gradient: AppColors.accentGradient,
       title: 'Never Lose Important Documents',
-      subtitle: 'Your personal vault for insurance, certificates, medical records & government documents.',
+      subtitle: 'Your personal vault for warranties, medical records & other documents.',
       color: AppColors.accent,
     ),
   ];

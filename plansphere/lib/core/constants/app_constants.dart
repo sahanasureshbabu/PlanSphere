@@ -58,11 +58,7 @@ class AppConstants {
 
   // Document Categories
   static const List<String> documentCategories = [
-    'Government Documents',
-    'Insurance',
     'Medical Records',
-    'Education Certificates',
-    'Property Documents',
     'Financial Documents',
     'Vehicle Documents',
     'Warranties',

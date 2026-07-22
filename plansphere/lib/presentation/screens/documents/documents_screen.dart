@@ -546,7 +546,7 @@ class _UploadDocSheetState extends State<_UploadDocSheet> {
               ),
               decoration: const InputDecoration(
                 labelText: 'Document Title',
-                hintText: 'e.g. Aadhaar Card, Passport',
+                hintText: 'e.g. Medical Bill, Utility Bill',
                 prefixIcon: Icon(Icons.title_rounded),
               ),
             ),
