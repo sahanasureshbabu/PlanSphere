@@ -25,6 +25,7 @@ import 'package:plansphere/presentation/screens/settings/settings_screen.dart';
 import 'package:plansphere/presentation/screens/warranty/warranty_screen.dart';
 import 'package:plansphere/presentation/screens/warranty/warranty_detail_screen.dart';
 import 'package:plansphere/presentation/screens/documents/documents_screen.dart';
+import 'package:plansphere/presentation/screens/documents/document_detail_screen.dart';
 import 'package:plansphere/presentation/screens/search/search_screen.dart';
 import 'package:plansphere/presentation/screens/notifications/notifications_screen.dart';
 import 'package:plansphere/presentation/screens/profile/profile_screen.dart';
@@ -158,6 +159,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final id = state.pathParameters['id']!;
           return WarrantyDetailScreen(warrantyId: id);
+        },
+      ),
+      GoRoute(
+        path: '/documents/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return DocumentDetailScreen(documentId: id);
         },
       ),
       GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
