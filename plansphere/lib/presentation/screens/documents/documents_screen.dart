@@ -444,7 +444,7 @@ class _UploadDocSheet extends StatefulWidget {
 
 class _UploadDocSheetState extends State<_UploadDocSheet> {
   final _titleCtrl = TextEditingController();
-  String _category = 'Government Documents';
+  String _category = AppConstants.documentCategories.first;
   PlatformFile? _file;
 
   @override
