@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -277,13 +279,12 @@ class _DocCard extends StatelessWidget {
                 ),
                 child: Stack(
                   children: [
-                    Center(
-                      child: Icon(
-                        isPdf
-                            ? Icons.picture_as_pdf_rounded
-                            : Icons.image_rounded,
-                        size: 48,
-                        color: color,
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(16),
+                        ),
+                        child: _buildPreview(color),
                       ),
                     ),
                     if (isExpired)
@@ -378,6 +379,65 @@ class _DocCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPreview(Color color) {
+    final url = doc.fileUrl ?? '';
+    final isPdf = doc.fileType == 'pdf';
+
+    if (isPdf) {
+      return Center(
+        child: Icon(
+          Icons.picture_as_pdf_rounded,
+          size: 48,
+          color: color,
+        ),
+      );
+    }
+
+    if (url.startsWith('data:image/')) {
+      try {
+        final base64String = url.split(',').last;
+        final bytes = base64Decode(base64String);
+        return Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          errorBuilder: (context, error, stackTrace) => Center(
+            child: Icon(
+              Icons.image_rounded,
+              size: 48,
+              color: color,
+            ),
+          ),
+        );
+      } catch (e) {
+        // Fallback
+      }
+    } else if (url.isNotEmpty && url.startsWith('http')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (context, error, stackTrace) => Center(
+          child: Icon(
+            Icons.image_rounded,
+            size: 48,
+            color: color,
+          ),
+        ),
+      );
+    }
+
+    return Center(
+      child: Icon(
+        Icons.image_rounded,
+        size: 48,
+        color: color,
       ),
     );
   }

@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 
 import 'package:plansphere/core/constants/app_colors.dart';
 import 'package:plansphere/presentation/providers/document_provider.dart';
+import 'package:plansphere/data/models/document_model.dart';
 import 'package:plansphere/core/utils/file_saver_helper.dart';
 import 'package:plansphere/core/utils/responsive_layout.dart';
 
@@ -320,6 +321,7 @@ class DocumentDetailScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
   }
 
   Widget _buildPreview(BuildContext context, DocumentModel doc, {required bool isWide}) {
